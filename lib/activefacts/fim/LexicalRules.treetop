@@ -1,0 +1,240 @@
+#
+#       ActiveFacts FIM Parser.
+#       Various lexical rules for FIM
+#
+# Copyright (c) 2024 Clifford Heath. Read the LICENSE file.
+#
+module ActiveFacts
+  module FIM
+    grammar LexicalRules
+
+      rule arrow ( '=>' / '➤' / '▶' ) s end	# right-pointing arrowhead
+      rule and ( 'A' !alphanumeric / '∧' ) s end# wedge
+      rule or ( 'v' !alphanumeric / '∨' ) s end	# downward wedge
+      rule join ( '><' / '⨝' ) s end		# join
+      rule cross 'X' !alphanumeric / '×' / '⨯' / '✕' end # cross product, multiplication
+      rule except ( '\\' / '∖' ) s end		# relative complement
+
+      rule lparen '(' end
+      rule rparen ')' end
+      rule lbrack '[' end
+      rule rbrack ']' end
+      rule lbrace '{' end
+      rule rbrace '}' end
+
+      rule equalTo '=' ![>] end
+      rule notEqualTo '<>' / '!=' / '≠' end
+      rule lessOrGreater '≶' end
+      rule lessThan '<' !'=' end
+      rule lessOrEqual '<=' / '≤' end
+      rule greaterOrEqual '>=' / '≥' end
+      rule greaterThan '>' ![=<] end
+
+      rule typename
+	id s
+      end
+
+      rule range
+        (numeric_range / string_range)
+      end
+
+      rule numeric_range
+        number s tail:( '..' s end:number? s )?
+        / '..' s number s
+      end
+
+      rule string_range
+        string s tail:( '..' s end:string? s )?
+        / '..' s string s
+      end
+
+      rule literal
+        ( boolean_literal
+        / string
+        / number
+        ) s
+        {
+          def value
+            elements[0].value
+          end
+          def node_type; :literal; end
+        }
+      end
+
+      rule boolean_literal
+        ( 'true' !alphanumeric s { def value; true; end }
+        / 'false' !alphanumeric s { def value; false; end }
+        ) !alphanumeric
+        {
+          def value; elements[0].value end
+        }
+      end
+
+      rule string
+        "'" (string_char)* "'"
+        {
+          def value
+            text_value
+            eval(text_value.sub(/\A'(.*)'\Z/,'"\1"'))
+          end
+        }
+      end
+
+      rule number
+        ( real /
+          fractional_real /
+          hexnumber /
+          octalnumber
+        ) !alphanumeric
+        {
+          def value
+            eval(text_value)
+          end
+          def node_type; :literal; end
+        }
+      end
+
+      # All purely lexical rules from here down, no-one looks at the structure, just the text_value:
+
+      rule string_char
+        ( '\\' [befntr\\']
+        / '\\' [0-7] [0-7] [0-7]
+        / '\\' [\r]* [\n] [\r]*
+        / '\\0'
+        / '\\x' [0-9A-Fa-f] [0-9A-Fa-f]
+        / '\\u' [0-9A-Fa-f] [0-9A-Fa-f] [0-9A-Fa-f] [0-9A-Fa-f]
+        / (![\'\\\0-\x07\x0A-\x1F] .)
+        )
+      end
+
+      rule real
+        [-+]? [1-9] [0-9]* fraction? exponent?
+      end
+
+      rule fractional_real
+        [-+]? '0' fraction exponent?
+      end
+
+      rule fraction
+        radix_point [0-9]+
+      end
+
+      rule exponent
+        ( [Ee] [-+]? [0-9]+ )
+      end
+
+      rule hexnumber
+        '0x' [0-9A-Fa-f]+
+      end
+
+      rule octalnumber
+        '0' [0-7]*
+      end
+
+      rule naturalNumber
+	[1-9] '0-9'*
+      end
+
+      rule infinity
+	'∞'
+      end
+
+      rule id
+        alpha alphanumeric*
+        { def value; text_value; end }
+      end
+
+      rule alpha
+        [[:alpha:]_]
+      end
+
+      rule alphanumeric
+        alpha / [0-9]
+      end
+
+      rule s    # Optional space
+        S?
+      end
+
+      rule S    # Mandatory space
+        (white / comment_to_eol / comment_c_style)+
+      end
+
+      rule white
+        [ \t\n\r]+
+      end
+
+      rule comment_to_eol
+        '//' (!"\n" .)*
+        {
+          def node_type; :comment; end
+        }
+      end
+
+      rule comment_c_style
+        '/*' (!'*/' . )* '*/'
+        {
+          def node_type; :comment; end
+        }
+      end
+
+      rule regular_expression
+        '/' !'/' regular_expression_contents '/'
+        {
+          def contents
+            regular_expression_contents.text_value
+          end
+        }
+      end
+
+      rule regular_expression_contents
+        regular_expression_alternate ( '|' regular_expression_alternate )*
+      end
+
+      rule regular_expression_alternate
+        regular_expression_sequence
+      end
+
+      rule regular_expression_sequence
+        regular_expression_atom*
+      end
+
+      rule regular_expression_atom
+        (
+          '[' character_classes ']'
+          / regular_expression_group
+          / ![*+?()|/] string_char
+        ) regular_expression_multiplicity?
+      end
+
+      rule character_classes
+        character_class+
+      end
+
+      rule character_class
+        !']' string_char '-' !']' string_char
+        / '-'
+        / !']' string_char
+      end
+
+      rule regular_expression_multiplicity
+        '*' / '+' / '?'
+      end
+
+      rule regular_expression_group
+        '('
+          regular_expression_group_extension?
+          regular_expression_contents
+        ')'
+      end
+
+      rule regular_expression_group_extension
+        '?' (
+          '<' ( !'>' .)+ '>'    # A tag for a regular expression group
+        # REVISIT: Add more group extensions as needed
+        )
+      end
+
+    end
+  end
+end

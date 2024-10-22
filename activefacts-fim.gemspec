@@ -14,13 +14,19 @@ Gem::Specification.new do |spec|
   spec.homepage      = "http://github.com/cjheath/activefacts-fim"
   spec.license       = "MIT"
 
-  spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
+  spec.files         = `git ls-files -z`.
+    split("\x0").
+    reject { |f| f.match(%r{^(test|spec|features)/}) }.
+    map{|file| file.sub(/\.treetop$/,'.rb')}
+  spec.bindir        = "exe"
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "bundler", ">= 1.10"
   spec.add_development_dependency "rake", ">= 10"
   spec.add_development_dependency "rspec", "~> 3.3"
+  spec.add_development_dependency "debug"
 
-  spec.add_runtime_dependency "activefacts-metamodel", ">= 1.8", "~> 1"
-  spec.add_runtime_dependency "nokogiri", ">= 1.6", "~> 1"
+  spec.add_runtime_dependency "activefacts-metamodel", ">= 1.9.11", "~> 1"
+  spec.add_runtime_dependency "activefacts-compositions", ">= 1.9.23", "~> 1"
+  spec.add_runtime_dependency "treetop", ["~> 1.6", ">= 1.6.9"]
 end

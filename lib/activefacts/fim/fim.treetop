@@ -1,0 +1,231 @@
+require 'activefacts/fim/LexicalRules'
+
+module ActiveFacts
+  module FIM
+    grammar FIM
+      include LexicalRules
+
+      rule top
+	(definition
+	)+
+      end
+
+      rule definition
+	s
+	(
+	factType
+	/ valuesOf
+	/ alternatePredicate
+	/ roleNaming
+	/ mandatory
+	/ unique
+	/ identification
+	/ externalUnique
+	/ externalIdentification
+	/ frequency
+	/ subtype
+	/ subset
+	/ exclusive
+	/ equality
+	/ typeCardinality
+	/ roleCardinality
+	/ objectifies
+	/ comparison
+	/ ringConstraint
+	/ subTypeRule
+	/ factTypeRule
+	/ joinPath
+	) 
+      end
+
+      rule factType
+	'FactType' s '(' s predicate s '(' s typename+ ')' s ')' s
+      end
+
+      rule alternatePredicate
+	'AlternatePredicate' s '(' s predicate ',' s predicate '(' s (predicateRole s)+ ')' s ')' s
+      end
+
+      rule roleNaming
+	'RoleNaming' s '(' predicateRole roleName ')' s
+      end
+
+      rule mandatory
+	'Mandatory' s '(' s typename predicateRole+ ')' s
+      end
+
+      rule unique
+	'Unique' s '(' s predicateRole+ ')' s
+      end
+
+      rule identification
+	'Identification' s '(' s typename predicateRole '(' s (predicateRole+) ')' s ')' s
+      end
+
+      rule externalUnique
+	'ExternalUnique' s '(' s predicateRole+ ')' s
+      end
+
+      rule externalIdentification
+	'ExternalIdentification' s '(' s typename '(' s predicateRole+ ')' s ')' s
+      end
+
+      rule frequency
+	# For Frequency, the predicates must be all the same
+	# For ExternalFrequency, the predicates may be all different
+	'External'? 'Frequency' s '(' s predicateRole+ frequencyRange ')' s
+      end
+
+      rule frequencyRange
+	'(' s
+	(
+	  naturalNumber
+	  / ( '..' s naturalNumber )
+	  / ( naturalNumber '..' s naturalNumber? )
+	)
+	')' s
+      end
+
+      rule subtype
+	('Subtype' / 'ExclusiveSubtype' 's'? / 'ExhaustiveSubtype' 's'? ) s
+	'(' s '(' s typename+ ')' s typename ')' s
+      end
+
+      rule subset
+	'Subset' s '(' s rolePairs+ ')' s
+      end
+
+      rule exclusive
+	'Exclusive' s '(' s rolePairs+ ')' s
+      end
+
+      rule equality
+	'Equal' s '(' s rolePairs+ ')' s
+      end
+
+      rule rolePairs
+	( '(' s predicaterole predicateRole ')' s )+
+      end
+
+      rule typeCardinality
+	'TypeCardinality' s '(' typename cardinalityRange ')' s
+      end
+
+      rule roleCardinality
+	'RoleCardinality' s '(' predicateRole cardinalityRange ')' s
+      end
+
+      rule cardinalityRange
+	'(' (naturalNumber / '0' ![0-9] s) ',' s (naturalNumber / infinity) s ')' s
+      end
+
+      rule objectifies
+	'Objectifies' s '(' typename predicate s ')'
+      end
+
+      rule valuesOf
+	'ValuesOf' s '(' (typename / predicateRole ) '(' s literal+ ')' s ')' s
+      end
+
+      rule comparison
+	comparisonOperator s '(' predicateRole predicateRole ')' s
+      end
+
+      rule comparisonOperator
+	equalTo / notEqualTo /
+	lessOrGreater / lessThan / lessOrEqual /
+	greaterOrEqual / greaterThan
+      end
+
+      rule ringConstraint
+	ringConstraintType s '(' predicateRole predicateRole ')' s
+      end
+
+      rule ringConstraintType
+	'LocallyReflexive'
+	/ 'PurelyReflexive'
+	/ 'Irreflexive'
+	/ 'Symmetric'
+	/ 'Asymmetric'
+	/ 'Antisymmetric'
+	/ 'Transitive'
+	/ 'Intransitive'
+	/ 'StronglyIntransitive'
+	/ 'Acyclic'
+      end
+
+      rule subTypeRule
+	'SubTypeRule' s '(' s typename path ')' s
+      end
+
+      rule factTypeRule
+	'FactTypeRule' s '(' s predicate s path+ ')' s
+      end
+
+      rule joinPath
+	'JoinPath' s '(' predicate s rolePairs ')' s
+      end
+
+      # Precedence in expressions: ~ & v >
+      rule path
+	pathDisjunction
+      end
+
+      rule pathDisjunction
+	pathConjunction ( or pathDisjunction )*
+      end
+
+      rule pathConjunction
+	pathException ( and pathDisjunction )*
+      end
+
+      rule pathException
+	pathSimple ( except pathException )*
+      end
+
+      rule pathSimple
+	predicateRole arrow ( lbrack predicateRole join path rbrack )+
+	/ predicate s # must be a unaryPredicate
+	/ typename    # REVISIT: Indistinguishable from simple predicates
+	/ lbrace (literal s)+ rbrace
+	/ variable
+	/ variable comparisonOperator term
+	/ '(' s path ')' s
+      end
+
+      rule term
+	literal
+	/ variable
+	/ functionCall
+      end
+
+      rule variable
+	'?' id
+      end
+
+      rule roleName
+	id s
+      end
+
+      rule question
+	'?' !'?'
+      end
+
+      rule predicate
+	(question / alpha) (question / alphanumeric)*
+      end
+
+      rule predicateRole
+	predicate '.' roleNumber s
+      end
+
+      rule roleNumber
+	naturalNumber
+      end
+
+      rule functionCall
+	id lparen s term+ rparen
+      end
+    end
+  end
+end

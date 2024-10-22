@@ -3,11 +3,12 @@
 #       Read a FIM file into an ActiveFacts vocabulary
 #
 # FIM files are in the syntax defined in the ORM Syntax and Semantics glossary,
-# https://gitlab.com/orm-syntax-and-semantics/orm-syntax-and-semantics-docs/-/blob/master/ORM%20syntax%20and%20semantics%20glossary%20-%20Public%20BETA%202.pdf
+# https://gitlab.com/orm-syntax-and-semantics/orm-syntax-and-semantics-docs/
 #
 # Copyright (c) 2024 Clifford Heath. Read the LICENSE file.
 #
 require 'activefacts/metamodel'
+require 'activefacts/fim/parser'
 
 module ActiveFacts
   module Input
@@ -15,43 +16,34 @@ module ActiveFacts
     # Invoke as
     #   afgen --<generator> <file>.fim
     class FIM
-
-      RESERVED_WORDS = %w{
-        and but each each either false if maybe no none not one or some that true where
-      }
-
-    private
-      def self.readfile(filename, *options)
-        if File.basename(filename, '.orm') == "-"
-          self.read(STDIN, "<standard input>", options)
+      def self.readfile(filename)
+        if File.basename(filename, 'fim') == "-"
+          read(STDIN, "<standard input>")
         else
           File.open(filename) {|file|
-            self.read(file, filename, *options)
+            read(file, filename)
           }
         end
+      rescue => e
+        # Augment the exception message, but preserve the backtrace
+        ne = StandardError.new("In #{filename} #{e.message.strip}")
+        ne.set_backtrace(e.backtrace)
+        raise ne
       end
 
-      def self.read(file, filename = "stdin", *options)
-        FIM.new(file, filename, *options).read
+      # Read the specified input stream
+      def self.read(file, filename = "stdin")
+        readstring(file.read, filename)
       end 
 
-      def initialize(file, filename = "stdin", *options)
-        @file = file
-        @filename = filename
-        @options = options
-      end
-
-    public
-      def read          #:nodoc:
-        begin
-          @document = nil #!!! Nokogiri::XML(@file)
-        rescue => e
-          puts "Failed to parse FIM in #{@filename}: #{e.inspect}"
+      # Read the specified input string
+      def self.readstring(str, filename = "string")
+        parser = ActiveFacts::FIM::Parser.new(filename)
+        parser.parse_all(str, :definition) do |ast, tree|
+          debugger
         end
+      end 
 
-      end
-
-    private
-    end
+    end 
   end
 end
