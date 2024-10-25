@@ -1,0 +1,215 @@
+// Signature: Value Type name:
+//	CountryCode
+
+// Signature: Unary predicate name:
+//	?smokes
+
+// Binary predicate names:
+//	wasBornIn, ?speaks?veryWell, reportsTo, employs
+
+// Ternary predicate name:
+//	?played? for?
+
+// Quaternary predicate name:
+//	?in?on?ate?
+
+// Alternate predicate name:
+
+	AlternatePredicate(reportsTo, manages (2 1))
+
+// Signature: Role identifier for the unary predicate smokes:
+//	smokes.1
+
+// Role identifiers for the binary predicate employs:
+//	employs.1,employs.2
+
+// Role names:
+	RoleNaming(smokes.1, smokes.isSmoker)
+	RoleNaming(employs.1, employs.employer)
+	RoleNaming(employs.2, employs.employee)
+
+FactType(smokes (Person))
+FactType(wasBornIn (Person Country))
+FactType(employs (Company Person))
+
+FactType(made (Company Product))
+FactType(drives (Person Car))
+FactType(reportsTo (Person Person))
+
+FactType(?played?for?
+	(Person Sport Country))
+
+FactType(?introduced?to?
+	(Person Person Person))
+FactType(?ate?0n? (Cat Food Date))
+
+FactType(?in?on?ate? (Person City Date Food))
+
+FactType(enrolledIn (Student Course))
+Objectifies(Enrolment enrollediIn)
+
+FactType(resultedIn (Enrolment Grade))
+
+Unique(isOf.1)
+Unique (wasBornIn.1)
+Unique(speaks.1 speaks.2)
+Unique (isPresidentOf.1)
+Unique(isPresidentOf.2)
+
+Unique(?got?in?.1 ?got?in?.3)
+Unique(?got?in?.2 ?got?in?.3)
+
+Unique(?played?for?.1 ?played?for?.2
+	?played?for?.3)
+
+Mandatory(Person wasBornIn.1)
+
+/* Must have passport *or* driverLicence */
+Mandatory (Visitor
+	hasPassport.1 hasDriverLicence.1)
+
+Identification(Country has.1 (has.2))
+
+ExternalIdentification(State
+	(hasStateCode.2 isIn.2))
+
+ExternalUnique(hasStateName.2 isIn.2)
+
+ValuesOf(GenderCode (M F))
+
+ValuesOf(has.2 (0 .. 140))
+
+Subset ((smokes.1 isCancerProne.1))
+
+Subset ((?for?obtained?.1 enrollediIn.1)
+	(?for?obtained?.2 enrollediIn.2))
+
+JoinPath(P (speaks.1 speaks.2)
+	   (isOftenUsedIn.1 isOftenUsedIn.2))
+
+Subset ((servesIn.1 P.1)(servesIn.2 P.2))
+
+Exclusive((isWidowed.1 isMarried.1))
+
+Exclusive((reviewed.1 authored.1)
+	  (reviewed.2 authored.2))
+
+Equal((hasSystolic.1 hasDiasystolic.1))
+
+Subtype(Lecturer Employee)
+Subtype(Employee Person)
+Subtype(Student Person)
+Subtype(StudentEmployee Student)
+Subtype(StudentEmployee Employee)
+
+ExclusiveSubtypes((Dog Cat) Animal)
+
+ExhaustiveSubtypes((Player Coach) TeamMember)
+
+ExclusiveSubtypes((MalePerson FemalePerson)
+		  Person)
+ExhaustiveSubtypes((MalePerson FemalePerson)
+		  Person)
+
+Frequency (isAMemberOf.2 (12))
+Frequency (isOn.2 (4, 7))
+Frequency (reviews.1 (..5))
+Frequency (reviews.2 (2..))
+
+Frequency (?in?hadStaffOf?in?.1
+	?in?hadStaffOf?in?.2 (2))
+
+ExternalFrequency(isBy.2 isIn.2 (..2))
+
+>=(endedOn.2 startedOn.2)
+<(p.1 p.2)
+<=(p.1 p.2)
+=(p.1 p.2)
+!=(p.1 p.2)
+
+// RingConstraints:
+LocallyReflexive(p.1 p.2)
+PurelyReflexive(p.1 p.2)
+Irreflexive(p.1 p.2)
+Symmetric(p.1 p.2)
+Asymmetric(p.1 p.2)
+Antisymmetric(p.1 p.2)
+Transitive(p.1 p.2)
+Intransitive(p.1 p.2)
+StronglyIntransitive(p.1 p.2)
+Acyclic(p.1 p.2)
+// etc.
+
+TypeCardinality(President (0, 1))
+
+RoleCardinality(isThePresidentOf (0, 1))
+
+SubTypeRule(Smoker (Person ∧ smokes))
+
+SubTypeRule(Resident
+	(Person ∧ (isAResidentCitizen ∨ isAResidentAlien))
+
+SubTypeRule(SelfTransporter
+	(Person ∧ ((drives.1 ➤ [drives.2 ⨝ Car]) ∨
+		   (rides.1 ➤ [rides.2 ⨝ Motorcycle]))))
+
+SubTypeRule(NonSmoker (Person ∖ smokes) )
+
+SubTypeRule(NonDriver
+	(Person ∖ (drives.1 ➤ [drives.2 ⨝ Car]))
+
+SubTypeRule(TeeTotaller (Person ∖ (drinks.1 ➤ [drinks.2 ⨝ (Beverage ∧ isAlcoholic)]))
+
+FactTypeRule(isATypicalSportsPerson
+	(Person ∧ ?played?for?.1 ➤
+	[?played?for?.2 ⨝ (Sport ∧ isPopular)]
+	[?played?for?.3 ⨝ (Country ∧ isLarge)]))
+
+FactTypeRule(livesInCountry
+	(Person ∧ livesInState.1 ➤
+	[livesInState.2 ⨝ (State ∧ isIn.1 ➤
+	[isIn.2 ⨝ (Country ∧ ?x)])])
+	(Country ∧ ?x))
+
+FactTypeRule(canFullyCommunicateIn
+	(Person ∧
+	 (canSpeak.1 ➤ [canSpeak.2 ⨝ (Language ∧ ?x)]) ∧
+	 (canWrite.1 ➤ [canwrite.2 ⨝ (Language ∧ ?x)]))
+	(Language ∧ ?x))
+
+/*
+ Description:
+ Person can communicate in Language
+ */
+FactTypeRule(canCommunicateIn
+	(Person ∧
+	 ((canSpeak.1 ➤ [canSpeak.2 ⨝ (Language ∧ ?x)]) ∨
+	  (canWrite.1 ➤ [canwrite.2 ⨝ (Language ∧ ?x)])))
+	(Language ∧ ?x))
+
+/*
+ Description:
+ CarModel was sold in Region
+ is where
+ 	CarModel x is sold in Region where Customer who lives in Region bought some Car that is of CarModel x
+*/
+FactTypeRule(soldIn
+	(CarModel ∧ ?x)
+	(Region ∧
+	  (livesIn.2 ➤ [livesIn.1 ⨝ Customer ∧
+	    (bought.1 ➤ [bought.2 ⨝ Car ∧
+	      (isOf.1 ➤ [isOf.2 ⨝ (CarModel ∧ ?x)])])])))
+
+/*
+ Description:
+ Customer in Region bought CarModel
+ is where
+	Customer y lives in Region x and bought Car that is of CarModel y
+*/
+FactTypeRule(?in?bought?
+	(Customer ∧
+	  (livesIn.1 ➤ [livesIn.2 ⨝ (Region ∧ ?x)]) ∧
+	  (bought.1 ➤ [bought.2 ⨝ (Car ∧
+	    (isOf.1 ➤ [isOf.2 ⨝ CarModel ∧ ?y]))]))
+	(Region ∧ ?x)
+	(CarModel ∧ ?y))
