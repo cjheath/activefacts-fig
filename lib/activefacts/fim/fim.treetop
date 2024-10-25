@@ -24,6 +24,7 @@ module ActiveFacts
 	/ externalIdentification
 	/ frequency
 	/ subtype
+	/ subtypeConstrained
 	/ subset
 	/ exclusive
 	/ equality
@@ -43,7 +44,7 @@ module ActiveFacts
       end
 
       rule alternatePredicate
-	'AlternatePredicate' s '(' s predicate ',' s predicate '(' s (predicateRole s)+ ')' s ')' s
+	'AlternatePredicate' s '(' s predicate s ',' s predicate s '(' s (roleNumber s)+ ')' s ')' s
       end
 
       rule roleNaming
@@ -73,7 +74,12 @@ module ActiveFacts
       rule frequency
 	# For Frequency, the predicates must be all the same
 	# For ExternalFrequency, the predicates may be all different
-	'External'? 'Frequency' s '(' s predicateRole+ frequencyRange ')' s
+	'External'? 'Frequency' s '(' s predicateRole+ '(' s nonNegativeIntegerRange+ ')' s ')' s
+      end
+
+      rule nonNegativeIntegerRange
+        nonNegativeInteger s tail:( '..' s end:nonNegativeInteger? s )?
+        / '..' s nonNegativeInteger s
       end
 
       rule frequencyRange
@@ -87,7 +93,11 @@ module ActiveFacts
       end
 
       rule subtype
-	('Subtype' / 'ExclusiveSubtype' 's'? / 'ExhaustiveSubtype' 's'? ) s
+	'Subtype' s '(' s typename typename ')' s
+      end
+
+      rule subtypeConstrained
+	('Exclusive' / 'Exhaustive') 'Subtype' 's'? s
 	'(' s '(' s typename+ ')' s typename ')' s
       end
 
@@ -104,19 +114,19 @@ module ActiveFacts
       end
 
       rule rolePairs
-	( '(' s predicaterole predicateRole ')' s )+
+	( '(' s predicateRole predicateRole ')' s )+
       end
 
       rule typeCardinality
-	'TypeCardinality' s '(' typename cardinalityRange ')' s
+	'TypeCardinality' s '(' typename ','? s cardinalityRange ')' s
       end
 
       rule roleCardinality
-	'RoleCardinality' s '(' predicateRole cardinalityRange ')' s
+	'RoleCardinality' s '(' predicateRole ','? s cardinalityRange ')' s
       end
 
       rule cardinalityRange
-	'(' (naturalNumber / '0' ![0-9] s) ',' s (naturalNumber / infinity) s ')' s
+	'(' s nonNegativeInteger ',' s (naturalNumber / infinity) s ')' s
       end
 
       rule objectifies
@@ -124,7 +134,7 @@ module ActiveFacts
       end
 
       rule valuesOf
-	'ValuesOf' s '(' (typename / predicateRole ) '(' s literal+ ')' s ')' s
+	'ValuesOf' s '(' (predicateRole / typename) '(' s (range / literal / id s)+ ')' s ')' s
       end
 
       rule comparison
@@ -184,7 +194,7 @@ module ActiveFacts
       end
 
       rule pathSimple
-	predicateRole arrow ( lbrack predicateRole join path rbrack )+
+	predicateRole arrow ( lbrack predicateRole join path rbrack s)+
 	/ predicate s # must be a unaryPredicate
 	/ typename    # REVISIT: Indistinguishable from simple predicates
 	/ lbrace (literal s)+ rbrace

@@ -119,6 +119,10 @@ module ActiveFacts
         radix_point [0-9]+
       end
 
+      rule radix_point
+	'.'
+      end
+
       rule exponent
         ( [Ee] [-+]? [0-9]+ )
       end
@@ -132,7 +136,11 @@ module ActiveFacts
       end
 
       rule naturalNumber
-	[1-9] '0-9'*
+	[1-9] [0-9]*
+      end
+
+      rule nonNegativeInteger
+	naturalNumber / '0' ![0-9]
       end
 
       rule infinity

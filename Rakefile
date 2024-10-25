@@ -5,6 +5,10 @@ RSpec::Core::RakeTask.new(:spec)
 
 task :default => :spec
 
+task :build do
+  system('cd lib/activefacts/fim; tt fim.treetop; tt LexicalRules.treetop')
+end
+
 desc "Bump gem version patch number"
 task :bump do
   path = File.expand_path('../lib/activefacts/fim/version.rb', __FILE__)
