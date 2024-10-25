@@ -48,7 +48,7 @@ module ActiveFacts
       end
 
       rule roleNaming
-	'RoleNaming' s '(' predicateRole roleName ')' s
+	'RoleNaming' s '(' s predicateRole roleName ')' s
       end
 
       rule mandatory
@@ -118,11 +118,11 @@ module ActiveFacts
       end
 
       rule typeCardinality
-	'TypeCardinality' s '(' typename ','? s cardinalityRange ')' s
+	'TypeCardinality' s '(' s typename ','? s cardinalityRange ')' s
       end
 
       rule roleCardinality
-	'RoleCardinality' s '(' predicateRole ','? s cardinalityRange ')' s
+	'RoleCardinality' s '(' s predicateRole ','? s cardinalityRange ')' s
       end
 
       rule cardinalityRange
@@ -130,15 +130,15 @@ module ActiveFacts
       end
 
       rule objectifies
-	'Objectifies' s '(' typename predicate s ')'
+	'Objectifies' s '(' s typename predicate s ')'
       end
 
       rule valuesOf
-	'ValuesOf' s '(' (predicateRole / typename) '(' s (range / literal / id s)+ ')' s ')' s
+	'ValuesOf' s '(' s (predicateRole / typename) '(' s (range / literal / id s)+ ')' s ')' s
       end
 
       rule comparison
-	comparisonOperator s '(' predicateRole predicateRole ')' s
+	comparisonOperator s '(' s predicateRole predicateRole ')' s
       end
 
       rule comparisonOperator
@@ -148,7 +148,7 @@ module ActiveFacts
       end
 
       rule ringConstraint
-	ringConstraintType s '(' predicateRole predicateRole ')' s
+	ringConstraintType s '(' s predicateRole predicateRole ')' s
       end
 
       rule ringConstraintType
@@ -173,7 +173,7 @@ module ActiveFacts
       end
 
       rule joinPath
-	'JoinPath' s '(' predicate s rolePairs ')' s
+	'JoinPath' s '(' s predicate s rolePairs ')' s
       end
 
       # Precedence in expressions: ~ & v >
@@ -194,10 +194,10 @@ module ActiveFacts
       end
 
       rule pathSimple
-	predicateRole arrow ( lbrack predicateRole join path rbrack s)+
+	predicateRole arrow ( lbrack s predicateRole join path rbrack s)+
 	/ predicate s # must be a unaryPredicate
 	/ typename    # REVISIT: Indistinguishable from simple predicates
-	/ lbrace (literal s)+ rbrace
+	/ lbrace s (literal s)+ rbrace s
 	/ variable
 	/ variable comparisonOperator term
 	/ '(' s path ')' s
