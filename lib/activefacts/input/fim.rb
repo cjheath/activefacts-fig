@@ -39,9 +39,7 @@ module ActiveFacts
       # Read the specified input string
       def self.readstring(str, filename = "string")
         parser = ActiveFacts::FIM::Parser.new(filename)
-        parser.parse_all(str, :definition) do |ast, tree|
-          debugger
-        end
+        parser.compile(str, :definition)
       end 
 
     end 

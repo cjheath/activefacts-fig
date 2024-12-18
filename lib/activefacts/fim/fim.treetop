@@ -12,59 +12,66 @@ module ActiveFacts
 
       rule definition
 	s
-	(
-	factType
-	/ valuesOf
-	/ alternatePredicate
-	/ roleNaming
-	/ mandatory
-	/ unique
-	/ identification
-	/ externalUnique
-	/ externalIdentification
-	/ frequency
-	/ subtype
-	/ subtypeConstrained
-	/ subset
-	/ exclusive
-	/ equality
-	/ typeCardinality
-	/ roleCardinality
-	/ objectifies
-	/ comparison
-	/ ringConstraint
-	/ subTypeRule
-	/ factTypeRule
-	/ joinPath
-	) 
+	node:(
+	  factType
+	  / valuesOf
+	  / alternatePredicate
+	  / roleNaming
+	  / mandatory
+	  / unique
+	  / identification
+	  / externalUnique
+	  / externalIdentification
+	  / frequency
+	  / subtype
+	  / subset
+	  / exclusive
+	  / equality
+	  / typeCardinality
+	  / roleCardinality
+	  / objectifies
+	  / comparison
+	  / ringConstraint
+	  / subTypeRule
+	  / factTypeRule
+	  / joinPath
+	)
+	{
+	  def ast
+	    return node.text_value  # REVISIT: Finish implementing ast
+	  end
+	}
       end
 
       rule factType
-	'FactType' s '(' s predicate s '(' s typename+ ')' s ')' s
+	'FactType' s '(' s predicate s '(' s typename ( sep typename )* ')' s ')' s
       end
 
       rule alternatePredicate
-	'AlternatePredicate' s '(' s predicate s ',' s predicate s '(' s (roleNumber s)+ ')' s ')' s
+	# REVISIT: Include comma between roleNumbers for consistency though it's not strictly needed?
+	# REVISIT: Allow eliding the roleNumber list in the case of reversing a binary?
+	'AlternatePredicate' s '(' s predicate comma predicate ( '(' s (roleNumber s)+ ')' s )? ')' s
       end
 
       rule roleNaming
+	# REVISIT: Include comma after predicateRole for consistency though it's not strictly needed?
 	'RoleNaming' s '(' s predicateRole roleName ')' s
       end
 
       rule mandatory
-	'Mandatory' s '(' s typename predicateRole+ ')' s
+	'Mandatory' s '(' s typename sep predicateRole+ ')' s
       end
 
       rule unique
-	'Unique' s '(' s predicateRole+ ')' s
+	'Unique' s '(' s predicateRole ( sep predicateRole )* ')' s
       end
 
       rule identification
-	'Identification' s '(' s typename predicateRole '(' s (predicateRole+) ')' s ')' s
+	'Identification' s '(' s typename sep predicateRole '(' s predicateRole ( sep predicateRole )* ')' s ')' s
       end
 
       rule externalUnique
-	'ExternalUnique' s '(' s predicateRole+ ')' s
+	'ExternalUnique' s '(' s predicateRole ( sep predicateRole )* ')' s
       end
 
       rule externalIdentification
@@ -74,21 +81,12 @@ module ActiveFacts
       rule frequency
 	# For Frequency, the predicates must be all the same
 	# For ExternalFrequency, the predicates may be all different
-	'External'? 'Frequency' s '(' s predicateRole+ '(' s nonNegativeIntegerRange+ ')' s ')' s
-      end
-
-      rule nonNegativeIntegerRange
-        nonNegativeInteger s tail:( '..' s end:nonNegativeInteger? s )?
-        / '..' s nonNegativeInteger s
+	'External'? 'Frequency' s '(' s predicateRole ( sep predicateRole )* sep frequencyRange ')' s
       end
 
       rule frequencyRange
 	'(' s
-	(
-	  naturalNumber
-	  / ( '..' s naturalNumber )
-	  / ( naturalNumber '..' s naturalNumber? )
-	)
+	  ( naturalNumber ( '..' s naturalNumber? )? / '..' s naturalNumber )
 	')' s
       end
 
@@ -98,7 +96,7 @@ module ActiveFacts
 
       rule subtypeConstrained
 	('Exclusive' / 'Exhaustive') 'Subtype' 's'? s
-	'(' s '(' s typename+ ')' s typename ')' s
+	'(' s '(' s typename ( sep typename )* ')' s typename ')' s
       end
 
       rule subset
@@ -126,19 +124,19 @@ module ActiveFacts
       end
 
       rule cardinalityRange
-	'(' s nonNegativeInteger ',' s (naturalNumber / infinity) s ')' s
+	'(' (naturalNumber / zero) '..' s (naturalNumber / infinity)? ')' s
       end
 
       rule objectifies
-	'Objectifies' s '(' s typename predicate s ')'
+	'Objectifies' s '(' typename sep predicate s ')'
       end
 
       rule valuesOf
-	'ValuesOf' s '(' s (predicateRole / typename) '(' s (range / literal / id s)+ ')' s ')' s
+	'ValuesOf' s '(' (typename / predicateRole ) '(' s range+ ')' s ')' s
       end
 
       rule comparison
-	comparisonOperator s '(' s predicateRole predicateRole ')' s
+	comparisonOperator s '(' predicateRole sep predicateRole ')' s
       end
 
       rule comparisonOperator
@@ -165,11 +163,11 @@ module ActiveFacts
       end
 
       rule subTypeRule
-	'SubTypeRule' s '(' s typename path ')' s
+	'SubType' 'Semi'? 'Rule' s '(' s typename sep path ')' s
       end
 
       rule factTypeRule
-	'FactTypeRule' s '(' s predicate s path+ ')' s
+	'FactType' 'Semi'? 'Rule' s '(' s predicate sep path ( sep path )* ')' s
       end
 
       rule joinPath
@@ -207,6 +205,7 @@ module ActiveFacts
 	literal
 	/ variable
 	/ functionCall
+	/ '(' s pathSimple ')' s    # REVISIT: Add parethesised subexpressions
       end
 
       rule variable
@@ -222,7 +221,7 @@ module ActiveFacts
       end
 
       rule predicate
-	(question / alpha) (question / alphanumeric)*
+	(id / question) s ( (id / question) s )*
       end
 
       rule predicateRole

@@ -22,6 +22,8 @@ module ActiveFacts
       rule lbrace '{' end
       rule rbrace '}' end
 
+      rule comma ',' s end
+
       rule equalTo '=' ![>] end
       rule notEqualTo '<>' / '!=' / '≠' end
       rule lessOrGreater '≶' end
@@ -32,6 +34,11 @@ module ActiveFacts
 
       rule typename
 	id s
+	(id s)*			# multi-word typenames include white-space
+      end
+
+      rule sep
+	comma			# sep is needed in lists of items which may contain whitespace
       end
 
       rule range
@@ -115,6 +122,10 @@ module ActiveFacts
         [-+]? '0' fraction exponent?
       end
 
+      rule radix_point
+	'.'
+      end
+
       rule fraction
         radix_point [0-9]+
       end
@@ -135,16 +146,16 @@ module ActiveFacts
         '0' [0-7]*
       end
 
+      rule zero
+	'0' ![0-9x.] s
+      end
+
       rule naturalNumber
 	[1-9] [0-9]*
       end
 
-      rule nonNegativeInteger
-	naturalNumber / '0' ![0-9]
-      end
-
       rule infinity
-	'∞'
+	'∞' s
       end
 
       rule id
