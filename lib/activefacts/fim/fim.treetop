@@ -54,12 +54,11 @@ module ActiveFacts
       end
 
       rule roleNaming
-	# REVISIT: Include comma after predicateRole for consistency though it's not strictly needed?
-	'RoleNaming' s '(' s predicateRole roleName ')' s
+	'RoleNaming' s '(' s predicateRole sep roleName ')' s
       end
 
       rule mandatory
-	'Mandatory' s '(' s typename sep predicateRole+ ')' s
+	'Mandatory' s '(' s typename sep predicateRole ( sep predicateRole )* ')' s
       end
 
       rule unique
@@ -75,13 +74,13 @@ module ActiveFacts
       end
 
       rule externalIdentification
-	'ExternalIdentification' s '(' s typename '(' s predicateRole+ ')' s ')' s
+	'ExternalIdentification' s '(' s typename '(' s predicateRole ( sep predicateRole )* ')' s ')' s
       end
 
       rule frequency
 	# For Frequency, the predicates must be all the same
 	# For ExternalFrequency, the predicates may be all different
-	'External'? 'Frequency' s '(' s predicateRole ( sep predicateRole )* sep frequencyRange ')' s
+	'External'? 'Frequency' s '(' s predicateRole ( sep predicateRole )* frequencyRange ')' s
       end
 
       rule frequencyRange
@@ -91,7 +90,7 @@ module ActiveFacts
       end
 
       rule subtype
-	'Subtype' s '(' s typename typename ')' s
+	'Subtype' s '(' s typename sep typename ')' s
       end
 
       rule subtypeConstrained
@@ -112,7 +111,7 @@ module ActiveFacts
       end
 
       rule rolePairs
-	( '(' s predicateRole predicateRole ')' s )+
+	( '(' s predicateRole sep predicateRole ')' s )+
       end
 
       rule typeCardinality
