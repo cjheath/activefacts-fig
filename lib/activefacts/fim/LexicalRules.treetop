@@ -11,7 +11,7 @@ module ActiveFacts
       rule arrow ( '=>' / '➤' / '▶' ) s end	# right-pointing arrowhead
       rule and ( 'A' !alphanumeric / '∧' ) s end# wedge
       rule or ( 'v' !alphanumeric / '∨' ) s end	# downward wedge
-      rule join ( '><' / '⨝' ) s end		# join
+      rule join_operator ( '><' / '⨝' ) s end		# join
       rule cross 'X' !alphanumeric / '×' / '⨯' / '✕' end # cross product, multiplication
       rule except ( '\\' / '∖' ) s end		# relative complement
 
@@ -33,8 +33,8 @@ module ActiveFacts
       rule greaterThan '>' ![=<] end
 
       rule typename
-	id s
-	(id s)*			# multi-word typenames include white-space
+	id s l:(id s)*			# multi-word typenames include white-space
+	  { def ast; ([id]+l.elements.map(&:id)).map(&:value)*' '; end }
       end
 
       rule sep
@@ -47,12 +47,16 @@ module ActiveFacts
 
       rule numeric_range
         number s tail:( '..' s end:number? s )?
+	  { def ast; n = number.value; (tail.empty? ? n : (tail.end.empty? ? n.. : n..tail.end.value)); end }
         / '..' s number s
+	  { def ast; ..number.value; end }
       end
 
       rule string_range
         string s tail:( '..' s end:string? s )?
+	  { def ast; s = string.value; (tail.empty? ? s : (tail.end.empty? ? s.. : s..tail.end.value)); end }
         / '..' s string s
+	  { def ast; ..string.value; end }
       end
 
       rule literal
@@ -97,7 +101,6 @@ module ActiveFacts
           def value
             eval(text_value)
           end
-          def node_type; :literal; end
         }
       end
 
@@ -198,15 +201,15 @@ module ActiveFacts
       end
 
       rule regular_expression
-        '/' !'/' regular_expression_contents '/'
+        '/' !'/' regular_expression_choice '/'
         {
           def contents
-            regular_expression_contents.text_value
+            regular_expression_choice.text_value
           end
         }
       end
 
-      rule regular_expression_contents
+      rule regular_expression_choice
         regular_expression_alternate ( '|' regular_expression_alternate )*
       end
 
@@ -243,14 +246,16 @@ module ActiveFacts
       rule regular_expression_group
         '('
           regular_expression_group_extension?
-          regular_expression_contents
+          regular_expression_choice
         ')'
       end
 
       rule regular_expression_group_extension
         '?' (
-          '<' ( !'>' .)+ '>'    # A tag for a regular expression group
-        # REVISIT: Add more group extensions as needed
+          '<' ( !'>' .)+ '>'    # A tag for a regular expression group capture name
+	  / '{' ( !'}' .)+ '}'	# A tag for a regular expression group call
+	  / '(DEFINE)'		# A DEFINE group to contain subroutines. Succeeds at once
+	  # REVISIT: Add more group extensions as needed
         )
       end
 

@@ -1,4 +1,5 @@
 require 'activefacts/fim/LexicalRules'
+require 'activefacts/fim/asts'
 
 module ActiveFacts
   module FIM
@@ -6,233 +7,297 @@ module ActiveFacts
       include LexicalRules
 
       rule top
-	(definition
-	)+
+        (definition
+        )+
       end
 
       rule definition
-	s
-	node:(
-	  factType
-	  / valuesOf
-	  / alternatePredicate
-	  / roleNaming
-	  / mandatory
-	  / unique
-	  / identification
-	  / externalUnique
-	  / externalIdentification
-	  / frequency
-	  / subtype
-	  / subset
-	  / exclusive
-	  / equality
-	  / typeCardinality
-	  / roleCardinality
-	  / objectifies
-	  / comparison
-	  / ringConstraint
-	  / subTypeRule
-	  / factTypeRule
-	  / joinPath
-	)
-	{
-	  def ast
-	    return node.text_value  # REVISIT: Finish implementing ast
-	  end
-	}
+        s
+        node:(
+          factType
+          / valuesOf
+          / alternatePredicate
+          / roleNaming
+          / mandatory
+          / unique
+          / identification
+          / externalUnique
+          / externalIdentification
+          / frequency
+          / subtype
+          / subtypeConstrained
+          / subset
+          / exclusive
+          / equality
+          / typeCardinality
+          / roleCardinality
+          / objectifies
+          / comparison
+          / ringConstraint
+          / subTypeRule
+          / factTypeRule
+          / joinPath
+        )
+        # { def ast; node.respond_to?(:ast) ? node.ast : node.text_value; end }
       end
 
       rule factType
-	'FactType' s '(' s predicate s '(' s typename ( sep typename )* ')' s ')' s
+        'FactType' s '(' s predicate s '(' s h:typename l:( sep typename )* ')' s ')' s
+          <FactType>
       end
 
       rule alternatePredicate
-	# REVISIT: Include comma between roleNumbers for consistency though it's not strictly needed?
-	# REVISIT: Allow eliding the roleNumber list in the case of reversing a binary?
-	'AlternatePredicate' s '(' s predicate comma predicate ( '(' s (roleNumber s)+ ')' s )? ')' s
+        # REVISIT: Include comma between roleNumbers for consistency though it's not strictly needed?
+        # REVISIT: This allows eliding the roleNumber list in the case of reversing a binary
+        'AlternatePredicate' s '(' s p1:predicate comma p2:predicate l:( '(' s r:(roleNumber s)+ ')' s )? ')' s
+          <AlternatePredicate>
       end
 
       rule roleNaming
-	'RoleNaming' s '(' s predicateRole sep roleName ')' s
+        'RoleNaming' s '(' s predicateRole sep roleName ')' s
+          <RoleNaming>
       end
 
       rule mandatory
-	'Mandatory' s '(' s typename sep predicateRole ( sep predicateRole )* ')' s
+        'Mandatory' s '(' s typename sep predicateRole r:( sep predicateRole )* ')' s
+          <Mandatory>
       end
 
       rule unique
-	'Unique' s '(' s predicateRole ( sep predicateRole )* ')' s
+        'Unique' s '(' s predicateRole r:( sep predicateRole )* ')' s
+          <Unique>
       end
 
       rule identification
-	'Identification' s '(' s typename sep predicateRole '(' s predicateRole ( sep predicateRole )* ')' s ')' s
+        'Identification' s '(' s typename
+          sep pr1:predicateRole         # Incorrect; only identification by a single role requires this uniqueness
+          '(' s predicateRole r:( sep predicateRole )* ')' s ')' s
+          <Identification>
       end
 
       rule externalUnique
-	'ExternalUnique' s '(' s predicateRole ( sep predicateRole )* ')' s
+        'ExternalUnique' s '(' s pr0:predicateRole r:( sep pr:predicateRole )* ')' s
+          <ExternalUnique>
       end
 
       rule externalIdentification
-	'ExternalIdentification' s '(' s typename '(' s predicateRole ( sep predicateRole )* ')' s ')' s
+        'ExternalIdentification' s '(' s typename '(' s pr0:predicateRole r:( sep pr:predicateRole )* ')' s ')' s
+          <ExternalIdentification>
       end
 
       rule frequency
-	# For Frequency, the predicates must be all the same
-	# For ExternalFrequency, the predicates may be all different
-	'External'? 'Frequency' s '(' s predicateRole ( sep predicateRole )* frequencyRange ')' s
+        # For Frequency, the predicates must be all the same
+        # For ExternalFrequency, the predicates may be all different
+        'External'? 'Frequency' s '(' s pr0:predicateRole r:( sep pr:predicateRole )* frequencyRange ')' s
+          <Frequency>
       end
 
       rule frequencyRange
-	'(' s
-	  ( naturalNumber ( '..' s naturalNumber? )? / '..' s naturalNumber )
-	')' s
+        '(' s
+          m:(
+            ( l:naturalNumber g:( '..' s h:naturalNumber? )? s ) <FrequencyRange1>
+            /
+            ( '..' s h:naturalNumber s ) <FrequencyRange2>
+          )+
+        ')' s
+          <FrequencyRange>
       end
 
       rule subtype
-	'Subtype' s '(' s typename sep typename ')' s
+        'Subtype' s '(' s t1:typename sep t2:typename ')' s
+          <Subtype>
       end
 
       rule subtypeConstrained
-	('Exclusive' / 'Exhaustive') 'Subtype' 's'? s
-	'(' s '(' s typename ( sep typename )* ')' s typename ')' s
+        ('Exclusive' / 'Exhaustive') 'Subtype' 's'? s
+        '(' s '(' s sub0:typename l:( sep typename )* ')' s sup:typename ')' s
+          <ESubtype>
       end
 
       rule subset
-	'Subset' s '(' s rolePairs+ ')' s
+        'Subset' s '(' s rolePairs ')' s
+          { def ast; { type: 'Subset', roles: rolePairs.ast }; end }
       end
 
       rule exclusive
-	'Exclusive' s '(' s rolePairs+ ')' s
+        'Exclusive' s '(' s rolePairs ')' s
+          { def ast; { type: 'Exclusive', roles: rolePairs.ast }; end }
       end
 
       rule equality
-	'Equal' s '(' s rolePairs+ ')' s
+        'Equal' s '(' s rolePairs ')' s
+          { def ast; { type: 'Equal', roles: rolePairs.ast }; end }
       end
 
       rule rolePairs
-	( '(' s predicateRole sep predicateRole ')' s )+
+        ( '(' s pr1:predicateRole sep pr2:predicateRole ')' s )+
+          { def ast; elements.map{|e| [ e.pr1.ast, e.pr2.ast ] }; end }
       end
 
       rule typeCardinality
-	'TypeCardinality' s '(' s typename ','? s cardinalityRange ')' s
+        'TypeCardinality' s '(' s typename ','? s r:cardinalityRange ')' s
+          <TypeCardinality>
       end
 
       rule roleCardinality
-	'RoleCardinality' s '(' s predicateRole ','? s cardinalityRange ')' s
+        'RoleCardinality' s '(' s predicateRole ','? s r:cardinalityRange ')' s
+          <RoleCardinality>
       end
 
       rule cardinalityRange
-	'(' (naturalNumber / zero) '..' s (naturalNumber / infinity)? ')' s
+        '(' i:(naturalNumber / zero) '..' s j:(naturalNumber / infinity)? ')' s
+          <CardinalityRange>
       end
 
       rule objectifies
-	'Objectifies' s '(' typename sep predicate s ')'
+        'Objectifies' s '(' typename sep predicate s ')'
+          <Objectifies>
       end
 
       rule valuesOf
-	'ValuesOf' s '(' (typename / predicateRole ) '(' s range+ ')' s ')' s
+        'ValuesOf' s '(' t:(predicateRole / typename ) '(' s r:(range+) ')' s ')' s
+          { def ast; { type: 'ValueConstraint', target: t.ast, ranges: r.elements.map(&:ast) }; end }
       end
 
       rule comparison
-	comparisonOperator s '(' predicateRole sep predicateRole ')' s
+        comparisonOperator s '(' pr1:predicateRole sep pr2:predicateRole ')' s
+          <Comparison>
       end
 
       rule comparisonOperator
-	equalTo / notEqualTo /
-	lessOrGreater / lessThan / lessOrEqual /
-	greaterOrEqual / greaterThan
+        equalTo / notEqualTo /
+        lessOrGreater / lessThan / lessOrEqual /
+        greaterOrEqual / greaterThan
       end
 
       rule ringConstraint
-	ringConstraintType s '(' s predicateRole predicateRole ')' s
+        ringConstraintType s '(' s pr1:predicateRole sep pr2:predicateRole ')' s
+          <RingConstraint>
       end
 
       rule ringConstraintType
-	'LocallyReflexive'
-	/ 'PurelyReflexive'
-	/ 'Irreflexive'
-	/ 'Symmetric'
-	/ 'Asymmetric'
-	/ 'Antisymmetric'
-	/ 'Transitive'
-	/ 'Intransitive'
-	/ 'StronglyIntransitive'
-	/ 'Acyclic'
+        'LocallyReflexive'
+        / 'PurelyReflexive'
+        / 'Irreflexive'
+        / 'Symmetric'
+        / 'Asymmetric'
+        / 'Antisymmetric'
+        / 'Transitive'
+        / 'Intransitive'
+        / 'StronglyIntransitive'
+        / 'Acyclic'
       end
 
       rule subTypeRule
-	'SubType' 'Semi'? 'Rule' s '(' s typename sep path ')' s
+        'SubType' 'Semi'? 'Rule' s '(' s typename sep path ')' s
+          <SubTypeRule>
       end
 
       rule factTypeRule
-	'FactType' 'Semi'? 'Rule' s '(' s predicate sep path ( sep path )* ')' s
+        'FactType' 'Semi'? 'Rule' s '(' s predicate sep path p:( sep path )* ')' s
+          <FactTypeRule>
       end
 
+      # Declare a new predicate to join the first role of the first pair through to the second of the last:
       rule joinPath
-	'JoinPath' s '(' s predicate s rolePairs ')' s
+        'JoinPath' s '(' s predicate s rolePairs ')' s
+          <JoinPath>
       end
 
       # Precedence in expressions: ~ & v >
       rule path
-	pathDisjunction
+        pathDisjunction
       end
 
       rule pathDisjunction
-	pathConjunction ( or pathDisjunction )*
+        pathConjunction f:( or pathConjunction )*
+          <PathDisjunction>
       end
 
       rule pathConjunction
-	pathException ( and pathDisjunction )*
+        pathException f:( and pathException )*
+          <PathConjunction>
       end
 
       rule pathException
-	pathSimple ( except pathException )*
+        pathSimple f:( except pathSimple )*
+          <PathException>
       end
 
       rule pathSimple
-	predicateRole arrow ( lbrack s predicateRole join path rbrack s)+
-	/ predicate s # must be a unaryPredicate
-	/ typename    # REVISIT: Indistinguishable from simple predicates
-	/ lbrace s (literal s)+ rbrace s
-	/ variable
-	/ variable comparisonOperator term
-	/ '(' s path ')' s
+	# role traversal (aka join step):
+	( predicateRole arrow p:( lbrack s predicateRole join_operator path rbrack s)+)
+	  { def ast
+	    { type: 'PathSteps', start: predicateRole.ast,
+	      steps: p.elements.map{|l| [l.predicateRole.ast, l.path.ast] }
+	    }
+	    end
+	  }
+	# unary predicate (REVISIT: unique role name would also work here)
+	/ ( s &[a-z] predicate s)       # must be a unaryPredicate
+	  { def ast; { type: 'UnaryPredicateClause', predicate: predicate.ast}; end }
+	# Type predicate
+	/ (typename '')          # REVISIT: Indistinguishable from simple predicates, hence &[a-z] above
+	  { def ast; { type: 'TypePredicateClause', typename: typename.ast}; end }
+	# Value(s) predicate: REVISIT: Add support for value ranges
+	/ (lbrace s l:(literal s)+ rbrace s)
+	  { def ast; { type: 'ValuesClause', values: l.elements.map(&:literal).map(&:text_value) }; end }
+	# variable binding
+	/ (variable '')
+	  { def ast; { type: 'VariableBinding', variable: variable.text_value}; end }
+	# variable comparison
+	/ (variable c:comparisonOperator term)
+	  { def ast
+	    { type: 'VariableComparisonClause', variable: variable.text_value,
+	      operator: c.text_value, term: term.ast }
+	    end
+	  }
+	# subexpression
+	/ ( '(' s path ')' s)
+	  { def ast; path.ast; end }
       end
 
       rule term
-	literal
-	/ variable
-	/ functionCall
-	/ '(' s pathSimple ')' s    # REVISIT: Add parethesised subexpressions
+        (
+        literal
+        / variable
+        / functionCall
+#       / '(' s pathSimple ')' s    # REVISIT: Path or pathSimple? Needed here? Add parenthesised subexpressions to spec?
+        )
+        {
+          def ast; "TERM: #{text_value.inspect}"; end
+        }
       end
 
       rule variable
-	'?' id
+        '?' id
       end
 
       rule roleName
-	id s
+        id s
+          { def value; id.value; end }
       end
 
       rule question
-	'?' !'?'
+        '?' !'?'
       end
 
       rule predicate
-	(id / question) s ( (id / question) s )*
+        start:(id / question) s l:( t:(id / question) s )*
+          { def ast; ([start] + l.elements.map(&:t)).map(&:text_value); end }
       end
 
       rule predicateRole
-	predicate '.' roleNumber s
+        predicate '.' roleNumber s
+          { def ast; { predicate: predicate.ast, roleNumber: Integer(roleNumber.text_value) }; end }
       end
 
       rule roleNumber
-	naturalNumber
+        naturalNumber
       end
 
       rule functionCall
-	id lparen s term+ rparen
+        id lparen s term+ rparen
       end
     end
   end
