@@ -238,20 +238,20 @@ module ActiveFacts
 	/ ( s &[a-z] predicate s)       # must be a unaryPredicate
 	  { def ast; { type: 'UnaryPredicateClause', predicate: predicate.ast}; end }
 	# Type predicate
-	/ (typename '')          # REVISIT: Indistinguishable from simple predicates, hence &[a-z] above
+	/ (typename s)          # REVISIT: Indistinguishable from simple predicates, hence &[a-z] above
 	  { def ast; { type: 'TypePredicateClause', typename: typename.ast}; end }
 	# Value(s) predicate: REVISIT: Add support for value ranges
 	/ (lbrace s l:(literal s)+ rbrace s)
 	  { def ast; { type: 'ValuesClause', values: l.elements.map(&:literal).map(&:text_value) }; end }
 	# variable comparison
-	/ ( variable s c:comparisonOperator s term)
+	/ ( variable s c:comparisonOperator s term s)
 	  { def ast
 	    { type: 'VariableComparisonClause', variable: variable.text_value,
 	      operator: c.text_value, term: term.ast }
 	    end
 	  }
 	# variable binding
-	/ (variable '')
+	/ (variable s)
 	  { def ast; { type: 'Variable', variable: variable.text_value}; end }
 	# subexpression
 	/ ( '(' s path ')' s)
@@ -267,8 +267,12 @@ module ActiveFacts
       end
 
       rule functionCall
-        id lparen l:(s term s sep? s)+ rparen s
-	  { def ast; { type: 'FunctionCall', name: id.value, parameters: l.elements.map(&:term).map(&:ast) }; end }
+        id lparen s t:( term l:(s sep s term)* )? rparen s
+	  { def ast
+	      parameters = t.empty? ? [] : ([t.term] + t.l.elements.map(&:term)).map(&:ast)
+	      { type: 'FunctionCall', name: id.value, parameters: parameters }
+	    end
+	  }
       end
 
       rule variable
@@ -286,7 +290,7 @@ module ActiveFacts
 
       rule predicate
         start:(id / question) s l:( t:(id / question) s )*
-          { def ast; ([start] + l.elements.map(&:t)).map(&:text_value); end }
+          { def ast; ([start] + l.elements.map(&:t)).map(&:text_value)*' '; end }
       end
 
       rule predicateRole
