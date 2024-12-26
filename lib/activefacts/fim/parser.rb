@@ -33,7 +33,7 @@ module ActiveFacts
 
       def compile(text, tag)
         asts = parse_all(text) do |ast, tree|
-          p ast
+          pp ast
           trace :parse, "Parsed '#{tree.text_value.gsub(/\s+/,' ').strip}'"
         end
         p asts

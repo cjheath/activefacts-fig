@@ -39,6 +39,7 @@ module ActiveFacts
           / joinPath
         )
         # { def ast; node.respond_to?(:ast) ? node.ast : node.text_value; end }
+        { def ast; node.ast; end }
       end
 
       rule factType
@@ -242,35 +243,36 @@ module ActiveFacts
 	# Value(s) predicate: REVISIT: Add support for value ranges
 	/ (lbrace s l:(literal s)+ rbrace s)
 	  { def ast; { type: 'ValuesClause', values: l.elements.map(&:literal).map(&:text_value) }; end }
-	# variable binding
-	/ (variable '')
-	  { def ast; { type: 'VariableBinding', variable: variable.text_value}; end }
 	# variable comparison
-	/ (variable c:comparisonOperator term)
+	/ ( variable s c:comparisonOperator s term)
 	  { def ast
 	    { type: 'VariableComparisonClause', variable: variable.text_value,
 	      operator: c.text_value, term: term.ast }
 	    end
 	  }
+	# variable binding
+	/ (variable '')
+	  { def ast; { type: 'Variable', variable: variable.text_value}; end }
 	# subexpression
 	/ ( '(' s path ')' s)
 	  { def ast; path.ast; end }
       end
 
       rule term
-        (
         literal
+	  { def ast; { type: 'Literal', value: value }; end }
         / variable
+	  { def ast; { type: 'Variable', value: text_value }; end }
         / functionCall
-#       / '(' s pathSimple ')' s    # REVISIT: Path or pathSimple? Needed here? Add parenthesised subexpressions to spec?
-        )
-        {
-          def ast; "TERM: #{text_value.inspect}"; end
-        }
+      end
+
+      rule functionCall
+        id lparen l:(s term s sep? s)+ rparen s
+	  { def ast; { type: 'FunctionCall', name: id.value, parameters: l.elements.map(&:term).map(&:ast) }; end }
       end
 
       rule variable
-        '?' id
+        '?' id 
       end
 
       rule roleName
@@ -296,9 +298,6 @@ module ActiveFacts
         naturalNumber
       end
 
-      rule functionCall
-        id lparen s term+ rparen
-      end
     end
   end
 end

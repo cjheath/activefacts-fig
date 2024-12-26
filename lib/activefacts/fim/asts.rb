@@ -150,7 +150,6 @@ module ActiveFacts
       end
 
       module SubTypeRule
-        # 'SubType' 'Semi'? 'Rule' s '(' s typename sep path ')' s
         def ast
           { type: 'SubTypeRule', semi: elements[0].text_value == 'SubTypeSemiRule',
             typename: typename.ast, path: path.ast
@@ -159,7 +158,6 @@ module ActiveFacts
       end
 
       module FactTypeRule
-        # 'FactType' 'Semi'? 'Rule' s '(' s predicate sep path ( sep path )* ')' s
         def ast
           { type: 'FactTypeRule', semi: elements[0].text_value == 'FactTypeSemiRule',
             predicate: predicate.ast, path: ([path]+p.elements.map(&:path)).map(&:ast)
