@@ -1,23 +1,23 @@
 #
 #       ActiveFacts Schema Input.
-#       Read a FIM file into an ActiveFacts vocabulary
+#       Read a FIG file into an ActiveFacts vocabulary
 #
-# FIM files are in the syntax defined in the ORM Syntax and Semantics glossary,
+# FIG files are in the syntax defined in the ORM Syntax and Semantics glossary,
 # https://gitlab.com/orm-syntax-and-semantics/orm-syntax-and-semantics-docs/
 #
 # Copyright (c) 2024 Clifford Heath. Read the LICENSE file.
 #
 require 'activefacts/metamodel'
-require 'activefacts/fim/parser'
+require 'activefacts/fig/parser'
 
 module ActiveFacts
   module Input
-    # Compile a FIM (.fim) file to an ActiveFacts vocabulary.
+    # Compile a FIG (.fig) file to an ActiveFacts vocabulary.
     # Invoke as
-    #   afgen --<generator> <file>.fim
-    class FIM
+    #   afgen --<generator> <file>.fig
+    class FIG
       def self.readfile(filename)
-        if File.basename(filename, 'fim') == "-"
+        if File.basename(filename, 'fig') == "-"
           read(STDIN, "<standard input>")
         else
           File.open(filename) {|file|
@@ -38,7 +38,7 @@ module ActiveFacts
 
       # Read the specified input string
       def self.readstring(str, filename = "string")
-        parser = ActiveFacts::FIM::Parser.new(filename)
+        parser = ActiveFacts::FIG::Parser.new(filename)
         parser.compile(str, :definition)
       end 
 

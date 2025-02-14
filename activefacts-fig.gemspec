@@ -1,17 +1,17 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'activefacts/fim/version'
+require 'activefacts/fig/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "activefacts-fim"
-  spec.version       = ActiveFacts::FIM::VERSION
+  spec.name          = "activefacts-fig"
+  spec.version       = ActiveFacts::FIG::VERSION
   spec.authors       = ["Clifford Heath"]
   spec.email         = ["clifford.heath@gmail.com"]
 
-  spec.summary       = %q{FIM format importer and generator for the ActiveFacts fact modeling suite.}
-  spec.description   = %q{FIM format importer and generator for the ActiveFacts fact modeling suite.}
-  spec.homepage      = "http://github.com/cjheath/activefacts-fim"
+  spec.summary       = %q{FIG format importer and generator for the ActiveFacts fact modeling suite.}
+  spec.description   = %q{FIG format importer and generator for the ActiveFacts fact modeling suite.}
+  spec.homepage      = "http://github.com/cjheath/activefacts-fig"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.

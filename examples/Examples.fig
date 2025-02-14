@@ -193,8 +193,8 @@ SubTypeRule(TeeTotaller, (Person ∖ (drinks.1 ➤ [drinks.2 ⨝ (Beverage ∧ i
 
 /*
  Person is a typical sports person where
- 	that Person played some Sport that is popular or
-	that Person played some Sport for some Country that is large
+ 	that Person played some Sport that is popular and
+	that Person played that Sport for some Country that is large
  */
 FactTypeRule(isATypicalSportsPerson,
 	(Person ∧ ?played?for?.1 ➤

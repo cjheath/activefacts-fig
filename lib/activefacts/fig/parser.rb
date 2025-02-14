@@ -1,11 +1,11 @@
 require 'treetop'
-require 'activefacts/fim/fim'
+require 'activefacts/fig/fig'
 
 require 'debug'
 
 module ActiveFacts
-  module FIM
-    class Parser < ActiveFacts::FIM::FIMParser
+  module FIG
+    class Parser < ActiveFacts::FIG::FIMParser
       def initialize filename
       end
 

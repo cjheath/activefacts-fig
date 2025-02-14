@@ -1,9 +1,9 @@
-require 'activefacts/fim/LexicalRules'
-require 'activefacts/fim/asts'
+require 'activefacts/fig/LexicalRules'
+require 'activefacts/fig/asts'
 
 module ActiveFacts
-  module FIM
-    grammar FIM
+  module FIG
+    grammar FIG
       include LexicalRules
 
       rule top

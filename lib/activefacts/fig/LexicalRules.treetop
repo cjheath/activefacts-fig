@@ -1,11 +1,11 @@
 #
-#       ActiveFacts FIM Parser.
-#       Various lexical rules for FIM
+#       ActiveFacts FIG Parser.
+#       Various lexical rules for FIG
 #
 # Copyright (c) 2024 Clifford Heath. Read the LICENSE file.
 #
 module ActiveFacts
-  module FIM
+  module FIG
     grammar LexicalRules
 
       rule arrow ( '=>' / '➤' / '▶' ) s end	# right-pointing arrowhead

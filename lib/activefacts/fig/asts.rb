@@ -1,6 +1,6 @@
 module ActiveFacts
-  module FIM
-    module FIM
+  module FIG
+    module FIG
       module FactType
         def typelist
           ([h]+l.elements.map(&:typename)).map(&:ast)

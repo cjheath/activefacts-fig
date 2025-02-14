@@ -1,5 +1,5 @@
 #
-#       ActiveFacts FIM Generator
+#       ActiveFacts FIG Generator
 #
 # Copyright (c) 2024 Clifford Heath. Read the LICENSE file.
 #
@@ -12,7 +12,7 @@ require 'activefacts/cql/verbaliser'
 module ActiveFacts
   module Generators
     # Options are comma or space separated:
-    class FIM
+    class FIG
       def self.options
         {
           # comments: ['Boolean', "Preceed each role definition with a comment that describes it"]

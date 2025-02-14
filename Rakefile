@@ -6,12 +6,12 @@ RSpec::Core::RakeTask.new(:spec)
 task :default => :spec
 
 task :build do
-  system('cd lib/activefacts/fim; tt fim.treetop; tt LexicalRules.treetop')
+  system('cd lib/activefacts/fig; tt fig.treetop; tt LexicalRules.treetop')
 end
 
 desc "Bump gem version patch number"
 task :bump do
-  path = File.expand_path('../lib/activefacts/fim/version.rb', __FILE__)
+  path = File.expand_path('../lib/activefacts/fig/version.rb', __FILE__)
   lines = File.open(path) do |fp| fp.readlines; end
   File.open(path, "w") do |fp|
     fp.write(
