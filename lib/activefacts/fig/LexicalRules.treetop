@@ -150,7 +150,7 @@ module ActiveFacts
       end
 
       rule zero
-	'0' ![0-9x.] s
+	'0' (&'..' / ![0-9x.])	# Allow zero at start of a range, but not a decimal or hex number
       end
 
       rule naturalNumber

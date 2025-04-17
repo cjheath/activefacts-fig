@@ -20,7 +20,7 @@ module ActiveFacts
           / roleNaming
           / mandatory
           / unique
-          / identification
+          / simpleIdentification
           / externalUnique
           / externalIdentification
           / frequency
@@ -38,58 +38,61 @@ module ActiveFacts
           / factTypeRule
           / joinPath
         )
+	s
         # { def ast; node.respond_to?(:ast) ? node.ast : node.text_value; end }
         { def ast; node.ast; end }
       end
 
       rule factType
-        'FactType' s '(' s predicate s '(' s h:typename l:( sep typename )* ')' s ')' s
+        'FactType' s '(' s predicate s '(' s h:typename l:( sep typename )* ')' s ')'
           <FactType>
       end
 
       rule alternatePredicate
         # REVISIT: Include comma between roleNumbers for consistency though it's not strictly needed?
         # REVISIT: This allows eliding the roleNumber list in the case of reversing a binary
-        'AlternatePredicate' s '(' s p1:predicate comma p2:predicate l:( '(' s r:(roleNumber s)+ ')' s )? ')' s
+        'AlternatePredicate' s '(' s p1:predicate s comma p2:predicate l:( '(' s r:(roleNumber s)+ ')' s )? ')'
           <AlternatePredicate>
       end
 
       rule roleNaming
-        'RoleNaming' s '(' s predicateRole sep roleName ')' s
+        'RoleNaming' s '(' s predicateRole sep roleName ')'
           <RoleNaming>
       end
 
       rule mandatory
-        'Mandatory' s '(' s typename sep predicateRole r:( sep predicateRole )* ')' s
+        'Mandatory' s '(' s typename sep predicateRole r:( sep predicateRole )* ')'
           <Mandatory>
       end
 
       rule unique
-        'Unique' s '(' s predicateRole r:( sep predicateRole )* ')' s
+        'Unique' s '(' s predicateRole r:( sep predicateRole )* ')'
           <Unique>
       end
 
-      rule identification
-        'Identification' s '(' s typename
-          sep pr1:predicateRole         # Incorrect; only identification by a single role requires this uniqueness
-          '(' s predicateRole r:( sep predicateRole )* ')' s ')' s
-          <Identification>
+      rule simpleIdentification
+        'SimpleIdentification' s '(' s
+	  typename sep
+	  pr1:predicateRole sep
+	  pr2:predicateRole s
+	')'
+          <SimpleIdentification>
       end
 
       rule externalUnique
-        'ExternalUnique' s '(' s pr0:predicateRole r:( sep pr:predicateRole )* ')' s
+        'ExternalUnique' s '(' s pr0:predicateRole r:( sep pr:predicateRole )* ')'
           <ExternalUnique>
       end
 
       rule externalIdentification
-        'ExternalIdentification' s '(' s typename '(' s pr0:predicateRole r:( sep pr:predicateRole )* ')' s ')' s
+        'ExternalIdentification' s '(' s typename '(' s pr0:predicateRole r:( sep pr:predicateRole )* ')' s ')'
           <ExternalIdentification>
       end
 
       rule frequency
         # For Frequency, the predicates must be all the same
         # For ExternalFrequency, the predicates may be all different
-        'External'? 'Frequency' s '(' s pr0:predicateRole r:( sep pr:predicateRole )* frequencyRange ')' s
+        'External'? 'Frequency' s '(' s pr0:predicateRole r:( sep pr:predicateRole )* frequencyRange ')'
           <Frequency>
       end
 
@@ -105,28 +108,28 @@ module ActiveFacts
       end
 
       rule subtype
-        'Subtype' s '(' s t1:typename sep t2:typename ')' s
+        'Subtype' s '(' s t1:typename sep t2:typename ')'
           <Subtype>
       end
 
       rule subtypeConstrained
         ('Exclusive' / 'Exhaustive') 'Subtype' 's'? s
-        '(' s '(' s sub0:typename l:( sep typename )* ')' s sup:typename ')' s
+        '(' s '(' s sub0:typename l:( sep typename )* ')' s sup:typename ')'
           <ESubtype>
       end
 
       rule subset
-        'Subset' s '(' s rolePairs ')' s
+        'Subset' s '(' s rolePairs ')'
           { def ast; { type: 'Subset', roles: rolePairs.ast }; end }
       end
 
       rule exclusive
-        'Exclusive' s '(' s rolePairs ')' s
+        'Exclusive' s '(' s rolePairs ')'
           { def ast; { type: 'Exclusive', roles: rolePairs.ast }; end }
       end
 
       rule equality
-        'Equal' s '(' s rolePairs ')' s
+        'Equal' s '(' s rolePairs ')'
           { def ast; { type: 'Equal', roles: rolePairs.ast }; end }
       end
 
@@ -136,32 +139,39 @@ module ActiveFacts
       end
 
       rule typeCardinality
-        'TypeCardinality' s '(' s typename ','? s r:cardinalityRange ')' s
+        'TypeCardinality' s '(' s typename ','? s r:cardinalityRange ')'
           <TypeCardinality>
       end
 
       rule roleCardinality
-        'RoleCardinality' s '(' s predicateRole ','? s r:cardinalityRange ')' s
+        'RoleCardinality' s '(' s predicateRole ','? s r:cardinalityRange ')'
           <RoleCardinality>
       end
 
       rule cardinalityRange
-        '(' i:(naturalNumber / zero) '..' s j:(naturalNumber / infinity)? ')' s
+        '(' s i:(naturalNumber / zero) s '..' s j:(naturalNumber / infinity)? s ')' s
           <CardinalityRange>
       end
 
       rule objectifies
-        'Objectifies' s '(' typename sep predicate s ')'
+        'Objectifies' s '(' s typename sep predicate s ')'
           <Objectifies>
       end
 
+      # A new predicate name for the binary associated with the role of the objectified predicate
+      rule linkFactType
+	'LinkFactType' s '(' s
+	  predicate s comma predicateRole
+	')'
+      end
+
       rule valuesOf
-        'ValuesOf' s '(' t:(predicateRole / typename ) '(' s r:(range+) ')' s ')' s
+        'ValuesOf' s '(' s t:(predicateRole / typename ) '(' s r:(range+) ')' s ')' s
           { def ast; { type: 'ValueConstraint', target: t.ast, ranges: r.elements.map(&:ast) }; end }
       end
 
       rule comparison
-        comparisonOperator s '(' pr1:predicateRole sep pr2:predicateRole ')' s
+        comparisonOperator s '(' s pr1:predicateRole sep pr2:predicateRole ')'
           <Comparison>
       end
 
@@ -172,7 +182,7 @@ module ActiveFacts
       end
 
       rule ringConstraint
-        ringConstraintType s '(' s pr1:predicateRole sep pr2:predicateRole ')' s
+        ringConstraintType s '(' s pr1:predicateRole sep pr2:predicateRole ')'
           <RingConstraint>
       end
 
@@ -190,18 +200,18 @@ module ActiveFacts
       end
 
       rule subTypeRule
-        'SubType' 'Semi'? 'Rule' s '(' s typename sep path ')' s
+        'SubType' 'Semi'? 'Rule' s '(' s typename sep path ')'
           <SubTypeRule>
       end
 
       rule factTypeRule
-        'FactType' 'Semi'? 'Rule' s '(' s predicate sep path p:( sep path )* ')' s
+        'FactType' 'Semi'? 'Rule' s '(' s predicate sep path p:( sep path )* ')'
           <FactTypeRule>
       end
 
       # Declare a new predicate to join the first role of the first pair through to the second of the last:
       rule joinPath
-        'JoinPath' s '(' s predicate s rolePairs ')' s
+        'JoinPath' s '(' s predicate s rolePairs ')'
           <JoinPath>
       end
 
@@ -244,10 +254,9 @@ module ActiveFacts
 	/ (lbrace s l:(literal s)+ rbrace s)
 	  { def ast; { type: 'ValuesClause', values: l.elements.map(&:literal).map(&:text_value) }; end }
 	# variable comparison
-	/ ( variable s c:comparisonOperator s term s)
+	/ ( c:comparisonOperator s term s)
 	  { def ast
-	    { type: 'VariableComparisonClause', variable: variable.text_value,
-	      operator: c.text_value, term: term.ast }
+	    { type: 'VariableComparisonClause', operator: c.text_value, term: term.ast }
 	    end
 	  }
 	# variable binding

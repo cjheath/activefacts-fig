@@ -43,11 +43,9 @@ module ActiveFacts
         end
       end
 
-      module Identification
+      module SimpleIdentification
         def ast
-          { type: 'Identification', typename: typename.ast,
-            uniqueBogusBogus: pr1.ast,  # Unique constraint applying to the other role from the identifying UC
-            roles: ([predicateRole]+r.elements.map(&:predicateRole)).map(&:ast) }
+          { type: 'SimpleIdentification', typename: typename.ast, role1: pr1.ast, role2: pr2.ast }
         end
       end
 

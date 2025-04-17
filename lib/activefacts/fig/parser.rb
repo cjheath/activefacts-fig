@@ -5,7 +5,7 @@ require 'debug'
 
 module ActiveFacts
   module FIG
-    class Parser < ActiveFacts::FIG::FIMParser
+    class Parser < ActiveFacts::FIG::FIGParser
       def initialize filename
       end
 

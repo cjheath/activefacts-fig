@@ -68,7 +68,7 @@ Mandatory(Person, wasBornIn.1)
 Mandatory (Visitor,
 	hasPassport.1, hasDriverLicence.1)
 
-Identification(Country, has.1 (has.2))
+SimpleIdentification(Country, has.1, has.2)
 
 ExternalIdentification(State (hasStateCode.2, isIn.2))
 
