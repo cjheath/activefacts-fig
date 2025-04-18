@@ -32,6 +32,7 @@ module ActiveFacts
           / typeCardinality
           / roleCardinality
           / objectifies
+          / linkFactType
           / comparison
           / ringConstraint
           / subTypeRule
@@ -163,6 +164,7 @@ module ActiveFacts
 	'LinkFactType' s '(' s
 	  predicate s comma predicateRole
 	')'
+	  { def ast; { type: 'LinkFactType', predicate: predicate.ast, role: predicateRole.ast }; end }
       end
 
       rule valuesOf

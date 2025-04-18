@@ -48,6 +48,8 @@ FactType(?in?on?ate? (Person, City, Date, Food))
 
 FactType(enrolledIn (Student, Course))
 Objectifies(Enrolment, enrolledIn)
+LinkFactType(? is for ?, enrolledIn.1)
+LinkFactType(? is in ?, enrolledIn.2)
 
 FactType(resultedIn (Enrolment, Grade))
 
