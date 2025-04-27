@@ -19,8 +19,14 @@ module ActiveFacts
         }
       end
 
-      def initialize composition, options = {}
-        super
+      def initialize constellation, compositions = [], modes = {}
+        @vocabulary = constellation.Vocabulary.values[0]
+        true
+      end
+
+
+      def self.compatibility
+        [0, nil]
       end
 
       def generate
@@ -35,82 +41,49 @@ module ActiveFacts
       end
 
       def vocabulary_start
-        build_indices
-        "schema #{@vocabulary.name};\n\n"
-      end
-
-      def all_units
-        units_cql = ''
-        units = @vocabulary.all_unit.to_a.sort_by{|u| u.name.gsub(/ /,'')}
-        while units.size > 0
-          i = 0
-          while i < units.size
-            unit = units[i]
-            i += 1
-
-            # Skip this one if the precursors haven't yet been dumped:
-            next if unit.all_derivation_as_derived_unit.detect{|d| units.include?(d.base_unit) }
-
-            # Even if we skip, we're done with this unit
-            units.delete(unit)
-            i -= 1
-
-            # Skip value-type derived units
-            next if unit.name =~ /\^/
-
-            #!!! units_cql << "/*\n * Units\n */" if units_cql.empty?
-            #!!! units_cql << unit.as_cql
-          end
-        end
-
-        units_cql << "\n" unless units_cql.empty?
-        units_cql
+        "// schema #{@vocabulary.name};\n\n"
       end
 
       def all_value_types
-        value_types_cql = ''
-        @vocabulary.
-        all_object_type.
-        sort_by{|o| o.name.gsub(/ /,'')}.
-        map do |o|
-          next nil unless o.is_a?(ActiveFacts::Metamodel::ValueType)
+        value_types_fig =
+          @vocabulary.
+          all_object_type.
+          sort_by{|o| o.name.gsub(/ /,'')}.
+          map do |o|
+            # Only value types:
+            next nil unless o.is_a?(ActiveFacts::Metamodel::ValueType)
+            # next nil if o.ordered_dumped
 
-          value_types_cql << "/*\n * Value Types\n */" if value_types_cql.empty?
+            is_datatype = !o.supertype &&       # No supertype, i.e. a base type
+                o.all_role.size == 0 &&         # No roles
+                !o.is_independent &&            # not independent
+                !o.value_constraint &&          # No value constraints
+                o.concept.all_context_note_as_relevant_concept.size == 0 &&       # No context notes
+                o.all_instance.size == 0
+            next nil if is_datatype
 
-          #!!! value_type_chain_dump(o)
-          o.ordered_dumped!
-        end.
-        compact*''
-        value_types_cql << "\n" unless value_types_cql.empty?
-        value_types_cql
-      end
+            has_supertype = o.supertype && o.supertype.name != o.name
 
-      # Ensure that supertype gets dumped first
-      def value_type_chain_dump(o)
-        return if o.ordered_dumped
-        value_type_chain_dump(o.supertype) if (o.supertype && !o.supertype.ordered_dumped)
-        #!!! value_type_fork(o)
-        o.ordered_dumped!
-      end
+            # Nothing to do here except for subtypes or value constraints:
+            next nil unless has_supertype || o.value_constraint
 
-      def value_type_fork(o)
-        if o.name == "_ImplicitBooleanValueType"
-          # do nothing
-        elsif
-            !o.supertype                      # No supertype, i.e. a base type
-            o.all_role.size == 0 &&           # No roles
-            !o.is_independent &&              # not independent
-            !o.value_constraint &&            # No value constraints
-            o.concept.all_context_note_as_relevant_concept.size == 0 &&       # No context notes
-            o.all_instance.size == 0          # No instances
-          data_type_dump(o)
-        else
-          super_type_name = o.supertype ? o.supertype.name : o.name
-          length = (l = o.length) && l > 0 ? "#{l}" : nil
-          scale = (s = o.scale) && s > 0 ? "#{s}" : nil
-          facets = { :length => length, :scale => scale }
-          value_type_dump(o, super_type_name, facets)
-        end
+            # REVISIT: Exclusive and Exhaustive subtype handling: Find the set(s) and dump them
+            # o.ordered_dumped!
+
+            v = []
+            if has_supertype
+              v << "SubType((#{o.name}) #{o.supertype.name})"
+            end
+            if o.value_constraint
+              v << "ValuesOf(#{o.name}, #{o.value_constraint.describe})"
+            end
+            v
+
+            # REVISIT: Handle length, scale, facets, population instances
+          end.
+          flatten.compact*"\n"
+        value_types_fig = "/*\n * Value Types\n */\n#{value_types_fig}\n" unless value_types_fig.empty?
+        value_types_fig
       end
 
       # Try to dump entity types in order of name, but we need
@@ -124,63 +97,21 @@ module ActiveFacts
         sorted = @vocabulary.all_object_type.select{|o|
           o.is_a?(ActiveFacts::Metamodel::EntityType) # and !o.fact_type
         }.sort_by{|o| o.name.gsub(/ /,'')}
-        panic = nil
-        while true do
-          count_this_pass = 0
-          skipped_this_pass = 0
-          sorted.each{|o|
-              next if o.ordered_dumped            # Already done
 
-              trace :ordered, "Panicing to dump #{panic.name}" if panic
-              # Can we do this yet?
-              remaining_precursors = Array(@precursors[o])-[o]
-              if (o != panic and                  # We don't *have* to do it (panic mode)
-                  remaining_precursors.size > 0)  # precursors - still blocked
-                trace :ordered, "Can't dump #{o.name} despite panic for #{panic.name}, it still needs #{remaining_precursors.map(&:name)*', '}" if panic
-                skipped_this_pass += 1
-                next
-              end
-              trace :ordered, "Dumping #{o.name} in panic mode, even though it still needs #{remaining_precursors.map(&:name)*', '}" if panic
-
-              entity_type_banner unless done_banner
-              done_banner = true
-
-              # We're going to emit o - remove it from precursors of others:
-              (@followers[o]||[]).each{|f|
-                  @precursors[f] -= [o]
-                }
-              count_this_pass += 1
-              panic = nil
-
-=begin
-              if (o.fact_type)
-                fact_type_dump_with_dependents(o.fact_type)
-                released_fact_types_dump(o)
-              else
-                entity_type_dump(o)
-                released_fact_types_dump(o)
-              end
-=end
-
-              entity_type_group_end
-            }
-
-            # Check that we made progress if there's any to make:
-            if count_this_pass == 0 && skipped_this_pass > 0
-              # Find the object that has the most followers and no fwd-ref'd supertypes:
-              # This selection might be better if we allow PI roles to be fwd-ref'd...
-              panic = sorted.
-                select{|o| !o.ordered_dumped }.
-                sort_by{|o|
-                    f = (@followers[o] || []) - [o];
-                    o.supertypes.detect{|s| !s.ordered_dumped } ? 0 : -f.size
-                  }[0]
-              trace :ordered, "Panic mode, selected #{panic.name} next"
-            end
-
-            break if skipped_this_pass == 0       # All done.
-
-        end
+        (sorted.size > 0 ? "/*\n * Entity Types\n */\n" : '') +
+        sorted.map do |o|
+          [
+            # But what about objectified fact types?
+            if o.preferred_identifier.all_role_ref.size == 1
+              simple_identification(o)
+            else
+              external_identification(o)
+            end,
+            objectification_dump(o.fact_type) if o.fact_type    # This entity type is an Objectification
+          ]
+          end
+        end.
+        flatten.compact*"\n"
       end
 
       def identified_by(o, pi)
@@ -500,17 +431,8 @@ module ActiveFacts
         value_type_dump(o, o.name, {}) if o.all_role.size > 0
       end
 
-      def value_type_dump(o, super_type_name, facets)
-        # No need to dump it if the only thing it does is be a supertype; it'll be created automatically
-        # return if o.all_value_type_as_supertype.size == 0
-
-        # REVISIT: A ValueType that is only used as a reference mode need not be emitted here.
-
-        puts o.as_cql
-      end
-
       def entity_type_dump(o)
-        o.ordered_dumped!
+        # o.ordered_dumped!
         pi = o.preferred_identifier
 
         supers = o.supertypes
@@ -620,7 +542,7 @@ module ActiveFacts
         nonstandard_readings = fact_type.all_reading - [forward_reading, reverse_reading]
         trace :mode, "--- nonstandard_readings.size now = #{nonstandard_readings.size}" if nonstandard_readings.size > 0
 
-        verbaliser = ActiveFacts::CQL::Verbaliser.new
+        verbaliser = nil # ActiveFacts::FIG::Verbaliser.new
 
         # The verbaliser needs to have a Player for the roles of entity_type, so it doesn't get subscripted.
         entity_roles =
@@ -641,7 +563,7 @@ module ActiveFacts
 
         # If we emitted a reading for the refmode, it'll include any role_value_constraint already
         if nonstandard_readings.size == 0 and c = value_role.role_value_constraint
-          constraint_text = " "+c.as_cql
+          constraint_text = " "+c.as_fig
         end
         (entity_type.is_independent ? ' independent' : '') +
           " identified by its #{value_residual}#{constraint_text}#{mapping_pragma(entity_type, true)}" +
@@ -658,7 +580,7 @@ module ActiveFacts
           return srm
         end
 
-        verbaliser = ActiveFacts::CQL::Verbaliser.new
+        verbaliser = nil # ActiveFacts::CQL::Verbaliser.new
 
         # Announce all the identifying fact roles to the verbaliser so it can decide on any necessary subscripting.
         # The verbaliser needs to have a Player for the roles of entity_type, so it doesn't get subscripted.
@@ -708,7 +630,7 @@ module ActiveFacts
         print mapping_pragma(o, true)
 
         if o.fact_type
-          verbaliser = ActiveFacts::CQL::Verbaliser.new
+          verbaliser = nil # ActiveFacts::CQL::Verbaliser.new
           # Announce all the objectified fact roles to the verbaliser so it can decide on any necessary subscripting.
           # The RoleRefs for corresponding roles across all readings are for the same player.
           verbaliser.alternate_readings o.fact_type.all_reading
@@ -771,7 +693,7 @@ module ActiveFacts
         end
 
         # There can be no roles of the objectified fact type in the readings, so no need to tell the Verbaliser anything special
-        verbaliser = ActiveFacts::CQL::Verbaliser.new
+        verbaliser = nil # ActiveFacts::CQL::Verbaliser.new
         verbaliser.alternate_readings fact_type.all_reading
         pr = fact_type.preferred_reading
         if (pr.role_sequence.all_role_ref.to_a[0].play)
@@ -814,7 +736,7 @@ module ActiveFacts
         # Loose binding in PresenceConstraints is limited to explicit role players (in an occurs list)
         # having no exact match, but having instead exactly one role of the same player in the readings.
 
-        verbaliser = ActiveFacts::CQL::Verbaliser.new
+        verbaliser = nil # ActiveFacts::CQL::Verbaliser.new
         # For a mandatory constraint (min_frequency == 1, max == nil or 1) any subtyping step is over the proximate role player
         # For all other presence constraints any subtyping step is over the counterpart player
         role_proximity = c.min_frequency == 1 && [nil, 1].include?(c.max_frequency) ? :proximate : :counterpart
@@ -849,7 +771,7 @@ module ActiveFacts
         scrs = c.all_set_comparison_roles.sort_by{|scr| scr.ordinal}
         role_sequences = scrs.map{|scr|scr.role_sequence}
         transposed_role_refs = scrs.map{|scr| scr.role_sequence.all_role_ref_in_order.to_a}.transpose
-        verbaliser = ActiveFacts::CQL::Verbaliser.new
+        verbaliser = nil # ActiveFacts::CQL::Verbaliser.new
 
         # Tell the verbaliser all we know, so it can figure out which players to subscript:
         players = []
@@ -947,7 +869,7 @@ module ActiveFacts
           c.superset_role_sequence.all_role_ref_in_order.map{|rr| [rr.role, rr.role.fact_type]}.transpose
         transposed_role_refs = [c.subset_role_sequence, c.superset_role_sequence].map{|rs| rs.all_role_ref_in_order.to_a}.transpose
 
-        verbaliser = ActiveFacts::CQL::Verbaliser.new
+        verbaliser = nil # ActiveFacts::CQL::Verbaliser.new
         transposed_role_refs.each { |role_refs| verbaliser.role_refs_have_subtype_steps role_refs }
         verbaliser.prepare_role_sequence c.subset_role_sequence
         verbaliser.prepare_role_sequence c.superset_role_sequence
@@ -1065,33 +987,13 @@ module ActiveFacts
         expanded
       end
 
-      def build_indices
-        @presence_constraints_by_fact = Hash.new{ |h, k| h[k] = [] }
-        @ring_constraints_by_fact = Hash.new{ |h, k| h[k] = [] }
-
-        @vocabulary.all_constraint.each { |c|
-            case c
-            when ActiveFacts::Metamodel::PresenceConstraint
-              fact_types = c.role_sequence.all_role_ref.map{|rr| rr.role.fact_type}.uniq  # All fact types spanned by this constraint
-              if fact_types.size == 1     # There's only one, save it:
-                # trace "Single-fact constraint on #{fact_types[0].concept.guid}: #{c.name}"
-                (@presence_constraints_by_fact[fact_types[0]] ||= []) << c
-              end
-            when ActiveFacts::Metamodel::RingConstraint
-              (@ring_constraints_by_fact[c.role.fact_type] ||= []) << c
-            else
-              # trace "Found unhandled constraint #{c.class} #{c.name}"
-            end
-          }
-      end
-
     end
-    publish_generator CQL, "Emit CQL, the Constellation Query Language"
+    publish_generator FIG, "Emit FIG, the Fact Interchaneg Grammar"
   end
 
   module Metamodel
     class ValueType
-      def as_cql
+      def as_fig
         parameters =
           [ length != 0 || scale != 0 ? length : nil,
             scale != 0 ? scale : nil
@@ -1120,7 +1022,7 @@ module ActiveFacts
     end
 
     class Unit
-      def as_cql
+      def as_fig
         if !ephemera_url
           if coefficient
             # REVISIT: Use a smarter algorithm to switch to exponential form when there'd be lots of zeroes.
