@@ -93,19 +93,21 @@ module ActiveFacts
       rule frequency
         # For Frequency, the predicates must be all the same
         # For ExternalFrequency, the predicates may be all different
-        'External'? 'Frequency' s '(' s pr0:predicateRole r:( sep pr:predicateRole )* frequencyRange ')'
+        'External'? 'Frequency' s '(' s frequencyRanges sep pr0:predicateRole r:( sep pr:predicateRole )* ')'
           <Frequency>
       end
 
-      rule frequencyRange
+      rule frequencyRanges
         '(' s
-          m:(
-            ( l:naturalNumber g:( '..' s h:naturalNumber? )? s ) <FrequencyRange1>
-            /
-            ( '..' s h:naturalNumber s ) <FrequencyRange2>
-          )+
+          fr0:frequencyRange frn:(sep frequencyRange)*
         ')' s
-          <FrequencyRange>
+          <FrequencyRanges>
+      end
+
+      rule frequencyRange
+	( l:naturalNumber g:( '..' s h:naturalNumber? )? s ) <FrequencyRange1>
+	/
+	( '..' s h:naturalNumber s ) <FrequencyRange2>
       end
 
       rule subtype

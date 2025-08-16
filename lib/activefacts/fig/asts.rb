@@ -70,7 +70,7 @@ module ActiveFacts
         def ast
           { type: elements[0].empty? ? 'Frequency' : 'ExternalFrequency',
             roles: ([pr0]+r.elements.map(&:pr)).map(&:ast),
-            range: frequencyRange.ast
+            range: frequencyRanges.ast
           }
         end
       end
@@ -90,9 +90,9 @@ module ActiveFacts
         end
       end
 
-      module FrequencyRange
+      module FrequencyRanges
         def ast
-          m.elements.map(&:ast)
+          [fr0.ast] + frn.elements.map(&:frequencyRange).map(&:ast)
         end
       end
 

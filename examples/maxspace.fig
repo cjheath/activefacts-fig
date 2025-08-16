@@ -89,15 +89,16 @@ ExclusiveSubtypes ( ( MalePerson , FemalePerson )
 ExhaustiveSubtypes ( ( MalePerson , FemalePerson ) 
 		 Person ) 
 
-Frequency ( isAMemberOf.2 ( 12 ) ) 
-Frequency ( isOn.2 ( 4 7 ) ) 
-Frequency ( reviews.1 ( ..5 ) ) 
-Frequency ( reviews.2 ( 2.. ) ) 
+Frequency ( ( 12 ) , isAMemberOf.2 ) 
+Frequency ( ( 4, 7) , isOn.2 )
+Frequency ( ( ..5 ) , reviews.1 ) 
+Frequency ( ( 2.. ) , reviews.2 ) 
 
-Frequency ( ?in?hadStaffOf?in?.1 ,
-	?in?hadStaffOf?in?.2 ( 2 ) ) 
+Frequency ( ( 2 ) ,
+	?in?hadStaffOf?in?.1 ,
+	?in?hadStaffOf?in?.2 ) 
 
-ExternalFrequency ( isBy.2 , isIn.2 ( ..2 ) ) 
+ExternalFrequency ( ( ..2 ) , isBy.2 , isIn.2 ) 
 
 >= ( endedOn.2 , startedOn.2 ) 
 < ( p.1 , p.2 ) 
