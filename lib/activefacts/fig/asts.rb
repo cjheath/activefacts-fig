@@ -10,16 +10,18 @@ module ActiveFacts
         end
       end
 
-      module AlternatePredicate
+      module AlternativePredicate
         def roleNumbers
           if l.empty?
             [2, 1]
           else
-            l.r.elements.map(&:roleNumber).map(&:text_value).map{|s|Integer(s)}
+            ( [l.r0.text_value] +
+              l.rn.elements.map(&:roleNumber).map(&:text_value)
+            ).map{|s|Integer(s)}
           end
         end
         def ast
-          { type: 'AlternatePredicate', p1: p1.ast, p2: p2.ast, roleNumbers: roleNumbers }
+          { type: 'AlternativePredicate', p1: p1.ast, p2: p2.ast, roleNumbers: roleNumbers }
         end
       end
 

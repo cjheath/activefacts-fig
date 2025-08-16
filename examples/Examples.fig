@@ -23,7 +23,7 @@ Role identifiers for the binary predicate employs:
 	employs.1,employs.2
 */
 
-AlternatePredicate(reportsTo, manages (2 1))
+AlternativePredicate(reportsTo, manages (2, 1))
 
 RoleNaming(smokes.1, smoker)
 RoleNaming(employs.1, employer)

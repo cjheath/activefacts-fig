@@ -16,7 +16,7 @@ module ActiveFacts
         node:(
           factType
           / valuesOf
-          / alternatePredicate
+          / alternativePredicate
           / roleNaming
           / mandatory
           / unique
@@ -49,11 +49,13 @@ module ActiveFacts
           <FactType>
       end
 
-      rule alternatePredicate
+      rule alternativePredicate
         # REVISIT: Include comma between roleNumbers for consistency though it's not strictly needed?
         # REVISIT: This allows eliding the roleNumber list in the case of reversing a binary
-        'AlternatePredicate' s '(' s p1:predicate s comma p2:predicate l:( '(' s r:(roleNumber s)+ ')' s )? ')'
-          <AlternatePredicate>
+        'AlternativePredicate' s '(' s p1:predicate s comma p2:predicate l:( '(' s
+	  r0:roleNumber s rn:(sep roleNumber s)*
+	')' s )? ')'
+          <AlternativePredicate>
       end
 
       rule roleNaming
@@ -62,12 +64,12 @@ module ActiveFacts
       end
 
       rule mandatory
-        'Mandatory' s '(' s typename sep predicateRole r:( sep predicateRole )* ')'
+        'Mandatory' s '(' s typename sep predicateRole r:( sep predicateRole )* ')' s
           <Mandatory>
       end
 
       rule unique
-        'Unique' s '(' s predicateRole r:( sep predicateRole )* ')'
+        'Unique' s '(' s predicateRole r:( sep predicateRole )* ')' s
           <Unique>
       end
 
