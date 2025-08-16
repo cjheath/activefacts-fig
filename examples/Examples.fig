@@ -106,6 +106,7 @@ Subtype(Employee, Person)
 Subtype(Student, Person)
 Subtype(StudentEmployee, Student)
 Subtype(StudentEmployee, Employee)
+Subtypes((Lecturer, StudentEmployee), Employee)
 
 ExclusiveSubtypes((Dog, Cat) Animal)
 

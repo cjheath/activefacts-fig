@@ -96,13 +96,21 @@ module ActiveFacts
         end
       end
 
-      module Subtype
+      module Subtypes
         def ast
-          { type: 'Subtype', super: t2.ast, subtypes: t1.ast }
+          if t1.respond_to? :t0
+            {
+              type: 'Subtypes',
+              super: t2.ast,
+              subtypes: [t1.t0.ast] + t1.tn.elements.map(&:typename).map(&:ast)
+            }
+          else
+            { type: 'Subtypes', super: t2.ast, subtypes: [t1.ast] }
+          end
         end
       end
 
-      module ESubtype
+      module ESubtypes
         def ast
           { type: elements[0].text_value+'Subtypes', super: sup.ast,
             subtypes: ([sub0]+l.elements.map(&:typename)).map(&:ast)

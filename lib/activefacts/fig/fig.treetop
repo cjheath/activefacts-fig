@@ -111,14 +111,17 @@ module ActiveFacts
       end
 
       rule subtype
-        'Subtype' s '(' s t1:typename sep t2:typename ')'
-          <Subtype>
+        'Subtype' 's'? s '(' s
+	  t1:(typename / '(' t0:typename tn:( sep typename )* ')' )
+	  sep t2:typename
+	')'
+          <Subtypes>
       end
 
       rule subtypeConstrained
         ('Exclusive' / 'Exhaustive') 'Subtype' 's'? s
         '(' s '(' s sub0:typename l:( sep typename )* ')' s sup:typename ')'
-          <ESubtype>
+          <ESubtypes>
       end
 
       rule subset
