@@ -166,6 +166,17 @@ module ActiveFacts
         { def value; text_value; end }
       end
 
+      rule predicateWord
+        (
+	  question
+	  /
+	  alpha alphanumeric* ('-' '-'?)?
+	  /
+	  ('-' '-'?)? alpha alphanumeric*
+	)
+        { def value; text_value; end }
+      end
+
       rule alpha
         [[:alpha:]_]
       end

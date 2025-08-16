@@ -39,7 +39,7 @@ module ActiveFacts
           / factTypeRule
           / joinPath
         )
-	s
+        s
         # { def ast; node.respond_to?(:ast) ? node.ast : node.text_value; end }
         { def ast; node.ast; end }
       end
@@ -53,8 +53,8 @@ module ActiveFacts
         # REVISIT: Include comma between roleNumbers for consistency though it's not strictly needed?
         # REVISIT: This allows eliding the roleNumber list in the case of reversing a binary
         'AlternativePredicate' s '(' s p1:predicate s comma p2:predicate l:( '(' s
-	  r0:roleNumber s rn:(sep roleNumber s)*
-	')' s )? ')'
+          r0:roleNumber s rn:(sep roleNumber s)*
+        ')' s )? ')'
           <AlternativePredicate>
       end
 
@@ -75,10 +75,10 @@ module ActiveFacts
 
       rule simpleIdentification
         'SimpleIdentification' s '(' s
-	  typename sep
-	  pr1:predicateRole sep
-	  pr2:predicateRole s
-	')'
+          typename sep
+          pr1:predicateRole sep
+          pr2:predicateRole s
+        ')'
           <SimpleIdentification>
       end
 
@@ -107,16 +107,16 @@ module ActiveFacts
       end
 
       rule frequencyRange
-	( l:naturalNumber g:( '..' s h:naturalNumber? )? s ) <FrequencyRange1>
-	/
-	( '..' s h:naturalNumber s ) <FrequencyRange2>
+        ( l:naturalNumber g:( '..' s h:naturalNumber? )? s ) <FrequencyRange1>
+        /
+        ( '..' s h:naturalNumber s ) <FrequencyRange2>
       end
 
       rule subtype
         'Subtype' 's'? s '(' s
-	  t1:(typename / '(' t0:typename tn:( sep typename )* ')' )
-	  sep t2:typename
-	')'
+          t1:(typename / '(' t0:typename tn:( sep typename )* ')' )
+          sep t2:typename
+        ')'
           <Subtypes>
       end
 
@@ -168,10 +168,10 @@ module ActiveFacts
 
       # A new predicate name for the binary associated with the role of the objectified predicate
       rule linkFactType
-	'LinkFactType' s '(' s
-	  predicate s comma predicateRole
-	')'
-	  { def ast; { type: 'LinkFactType', predicate: predicate.ast, role: predicateRole.ast }; end }
+        'LinkFactType' s '(' s
+          predicate s comma predicateRole
+        ')'
+          { def ast; { type: 'LinkFactType', predicate: predicate.ast, role: predicateRole.ast }; end }
       end
 
       rule valuesOf
@@ -245,52 +245,52 @@ module ActiveFacts
       end
 
       rule pathSimple
-	# role traversal (aka join step):
-	( predicateRole arrow p:( lbrack s predicateRole join_operator path rbrack s)+)
-	  { def ast
-	    { type: 'PathSteps', start: predicateRole.ast,
-	      steps: p.elements.map{|l| [l.predicateRole.ast, l.path.ast] }
-	    }
-	    end
-	  }
-	# unary predicate (REVISIT: unique role name would also work here)
-	/ ( s &[a-z] predicate s)       # must be a unaryPredicate
-	  { def ast; { type: 'UnaryPredicateClause', predicate: predicate.ast}; end }
-	# Type predicate
-	/ (typename s)          # REVISIT: Indistinguishable from simple predicates, hence &[a-z] above
-	  { def ast; { type: 'TypePredicateClause', typename: typename.ast}; end }
-	# Value(s) predicate: REVISIT: Add support for value ranges
-	/ (lbrace s l:(literal s)+ rbrace s)
-	  { def ast; { type: 'ValuesClause', values: l.elements.map(&:literal).map(&:text_value) }; end }
-	# variable comparison
-	/ ( c:comparisonOperator s term s)
-	  { def ast
-	    { type: 'VariableComparisonClause', operator: c.text_value, term: term.ast }
-	    end
-	  }
-	# variable binding
-	/ (variable s)
-	  { def ast; { type: 'Variable', variable: variable.text_value}; end }
-	# subexpression
-	/ ( '(' s path ')' s)
-	  { def ast; path.ast; end }
+        # role traversal (aka join step):
+        ( predicateRole arrow p:( lbrack s predicateRole join_operator path rbrack s)+)
+          { def ast
+            { type: 'PathSteps', start: predicateRole.ast,
+              steps: p.elements.map{|l| [l.predicateRole.ast, l.path.ast] }
+            }
+            end
+          }
+        # unary predicate (REVISIT: unique role name would also work here)
+        / ( s &[a-z] predicate s)       # must be a unaryPredicate
+          { def ast; { type: 'UnaryPredicateClause', predicate: predicate.ast}; end }
+        # Type predicate
+        / (typename s)          # REVISIT: Indistinguishable from simple predicates, hence &[a-z] above
+          { def ast; { type: 'TypePredicateClause', typename: typename.ast}; end }
+        # Value(s) predicate: REVISIT: Add support for value ranges
+        / (lbrace s l:(literal s)+ rbrace s)
+          { def ast; { type: 'ValuesClause', values: l.elements.map(&:literal).map(&:text_value) }; end }
+        # variable comparison
+        / ( c:comparisonOperator s term s)
+          { def ast
+            { type: 'VariableComparisonClause', operator: c.text_value, term: term.ast }
+            end
+          }
+        # variable binding
+        / (variable s)
+          { def ast; { type: 'Variable', variable: variable.text_value}; end }
+        # subexpression
+        / ( '(' s path ')' s)
+          { def ast; path.ast; end }
       end
 
       rule term
         literal
-	  { def ast; { type: 'Literal', value: value }; end }
+          { def ast; { type: 'Literal', value: value }; end }
         / variable
-	  { def ast; { type: 'Variable', value: text_value }; end }
+          { def ast; { type: 'Variable', value: text_value }; end }
         / functionCall
       end
 
       rule functionCall
         id lparen s t:( term l:(s sep s term)* )? rparen s
-	  { def ast
-	      parameters = t.empty? ? [] : ([t.term] + t.l.elements.map(&:term)).map(&:ast)
-	      { type: 'FunctionCall', name: id.value, parameters: parameters }
-	    end
-	  }
+          { def ast
+              parameters = t.empty? ? [] : ([t.term] + t.l.elements.map(&:term)).map(&:ast)
+              { type: 'FunctionCall', name: id.value, parameters: parameters }
+            end
+          }
       end
 
       rule variable
@@ -307,8 +307,13 @@ module ActiveFacts
       end
 
       rule predicate
-        start:(id / question) s l:( t:(id / question) s )*
-          { def ast; ([start] + l.elements.map(&:t)).map(&:text_value)*' '; end }
+          # A link fact type in an objectification may be referenced as a predicate:
+          t:(typename '.' predicate '.' roleNumber) s
+            { def ast; {typename: t.typename.text_value, predicate: t.predicate.text_value, roleNumber: Integer(t.roleNumber.text_value)}; end }
+        /
+          # A predicate may not start nor end with a hyphen-binding. Yes, that means a negative lookahead inside another one:
+          !'-' start:predicateWord s l:( !(predicateWord '-'+ s !(alpha / question)) t:predicateWord s )*
+            { def ast; ([start] + l.elements.map(&:t)).map(&:text_value)*' '; end }
       end
 
       rule predicateRole

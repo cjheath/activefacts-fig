@@ -46,6 +46,8 @@ module ActiveFacts
 
       def all_value_types
         value_types_fig =
+        []
+=begin
           @vocabulary.
           all_object_type.
           sort_by{|o| o.name.gsub(/ /,'')}.
@@ -83,9 +85,11 @@ module ActiveFacts
           end.
           flatten.compact*"\n"
         value_types_fig = "/*\n * Value Types\n */\n#{value_types_fig}\n" unless value_types_fig.empty?
+=end
         value_types_fig
       end
 
+=begin
       # Try to dump entity types in order of name, but we need
       # to dump ETs before they're referenced in preferred ids
       # if possible (it's not always, there may be loops!)
@@ -107,7 +111,7 @@ module ActiveFacts
             else
               external_identification(o)
             end,
-            objectification_dump(o.fact_type) if o.fact_type    # This entity type is an Objectification
+            (o.fact_type ? objectification_dump(o.fact_type) : nil)    # This entity type is an Objectification
           ]
           end
         end.
@@ -1065,6 +1069,7 @@ module ActiveFacts
 
         ';'
       end
+=end
     end
 
   end   # Metamodel

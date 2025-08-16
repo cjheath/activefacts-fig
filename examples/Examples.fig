@@ -1,36 +1,18 @@
-/*
-Signature: Value Type name:
-	CountryCode
-
-Signature: Unary predicate name:
-	?smokes
-
-Binary predicate names:
-	wasBornIn, ?speaks?veryWell, reportsTo, employs
-
-Ternary predicate name:
-	?played? for?
-
-Quaternary predicate name:
-	?in?on?ate?
-
-Alternate predicate name:
-
-Signature: Role identifier for the unary predicate smokes:
-	smokes.1
-
-Role identifiers for the binary predicate employs:
-	employs.1,employs.2
-*/
-
-AlternativePredicate(reportsTo, manages (2, 1))
+AlternativePredicate(reports to, manages (2, 1))
 
 RoleNaming(smokes.1, smoker)
 RoleNaming(employs.1, employer)
 RoleNaming(employs.2, employee)
 
+// Test Hyphen-binding on predicate readings:
+FactType(is licensed to drive semi-trailer (Person, Truck))		// "Person" is licensed to drive semi-trailer "Truck"
+FactType(is licensed to drive semi- trailer (Person, Truck))		// "Person" is licensed to drive "semi trailer Truck"
+FactType(is licensed to drive semi-- trailer (Person, Truck))		// "Person" is licensed to drive "semi-trailer Truck"
+
+FactType(? est affecté par ? -vertes (Country, Grenouille))		// "Country" is affected by "green Frog" (in French)
+
 FactType(smokes (Person))
-FactType(wasBornIn (Person, Country))
+FactType(was born in (Person, Country))
 FactType(employs (Company, Person))
 
 FactType(made (Company, Product))
@@ -46,8 +28,10 @@ FactType(?ate?on? (Cat, Food, Date))
 
 FactType(?in?on?ate? (Person, City, Date, Food))
 
-FactType(enrolledIn (Student, Course))
-Objectifies(Enrolment, enrolledIn)
+FactType(enrolled in (Student, Course))
+Objectifies(Enrolment, enrolled in)
+AlternativePredicate(Enrolment.Student.1, ? has ? (2, 1))		// Student has Enrolment
+AlternativePredicate(Enrolment.Course.1, ? involves ? (2, 1))		// Enrolment involves Course
 LinkFactType(? is for ?, enrolledIn.1)
 LinkFactType(? is in ?, enrolledIn.2)
 
